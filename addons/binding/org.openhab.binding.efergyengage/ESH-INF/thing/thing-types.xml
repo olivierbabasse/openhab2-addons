@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="efergyengage"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+        xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+    <!-- Sample Thing Type -->
+    <thing-type id="hub">
+        <label>Efergy Engage Hub</label>
+        <description>Efergy Engage Home Monitoring Hub</description>
+
+        <channels>
+            <channel id="instant" typeId="instant"/>
+            <channel id="daytotal" typeId="daytotal"/>
+            <channel id="weektotal" typeId="weektotal"/>
+            <channel id="monthtotal" typeId="monthtotal"/>
+            <channel id="yeartotal" typeId="yeartotal"/>
+            <channel id="last_measurement" typeId="last_measurement"/>
+        </channels>
+        <config-description>
+            <parameter name="email" type="text" required="true">
+                <label>User Name</label>
+                <description>The email to use when connecting to an Efergy Engage account</description>
+                <required>true</required>
+            </parameter>
+            <parameter name="password" type="text" required="true">
+                <context>password</context>
+                <label>Password</label>
+                <description>The password to use when connecting to an Efergy Engage account</description>
+                <required>true</required>
+            </parameter>
+            <parameter name="device" type="text" required="true">
+                <label>Registered device name</label>
+                <description>The name of the device registered with Efergy mobile app. e.g. "android"</description>
+                <default>android</default>
+            </parameter>
+            <parameter name="utcOffset" type="integer" required="false">
+                <label>Offset to UTC</label>
+                <description>Specifies the UTC offset in minutes for total calculations. A value of -120 means current time zone of UTC+2</description>
+                <default>0</default>
+            </parameter>
+            <parameter name="refresh" type="integer" required="false">
+                <label>Refresh refresh</label>
+                <description>Specifies the refresh refresh in seconds</description>
+                <default>30</default>
+            </parameter>
+        </config-description>
+    </thing-type>
+
+    <!-- Instant Channel Type -->
+    <channel-type id="instant">
+        <item-type>Number</item-type>
+        <label>Instant power consumption</label>
+        <description>Efergy Engage instant power consupmtion</description>
+        <state readOnly="true" pattern="%d W">
+        </state>
+    </channel-type>
+
+    <!-- Day Total Channel Type -->
+    <channel-type id="daytotal">
+        <item-type>String</item-type>
+        <label>Current day total power consumption</label>
+        <description>Efergy Engage current day total power consumption</description>
+        <state readOnly="true" pattern="%s">
+        </state>
+    </channel-type>
+
+    <!-- Week Total Channel Type -->
+    <channel-type id="weektotal">
+        <item-type>String</item-type>
+        <label>Current week total power consumption</label>
+        <description>Efergy Engage current week total power consumption</description>
+        <state readOnly="true" pattern="%s">
+        </state>
+    </channel-type>
+
+    <!-- Month Total Channel Type -->
+    <channel-type id="monthtotal">
+        <item-type>String</item-type>
+        <label>Current month total power consumption</label>
+        <description>Efergy Engage current month total power consumption</description>
+        <state readOnly="true" pattern="%s">
+        </state>
+    </channel-type>
+
+    <!-- Year Total Channel Type -->
+    <channel-type id="yeartotal">
+        <item-type>String</item-type>
+        <label>Current year total power consumption</label>
+        <description>Efergy Engage current year total power consumption</description>
+        <state readOnly="true" pattern="%s">
+        </state>
+    </channel-type>
+
+    <!-- Last Measurement Channel Type -->
+    <channel-type id="last_measurement">
+        <item-type>DateTime</item-type>
+        <label>Date and time of last measurement</label>
+        <description>Date and time of last data received from Efergy Engage cloud</description>
+        <state readOnly="true" pattern="%1$ta %1$tR">
+        </state>
+    </channel-type>
+</thing:thing-descriptions>
