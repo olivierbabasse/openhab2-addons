@@ -72,7 +72,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        logger.info("received command {} for channel {}", command, channelUID.getId());
+        logger.debug("received command {} for channel {}", command, channelUID.getId());
 
         if (command.equals(RefreshType.REFRESH)) {
             return;
@@ -218,7 +218,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
                     sendOffToSpeaker();
                     break;
                 default:
-                    logger.error("Unknown command :" + command.toLowerCase());
+                    logger.error("Unknown command: {}", command.toLowerCase());
             }
         } catch (Exception ex) {
             logger.error("SendCommandToSpeaker error: {}", ex.toString());
@@ -582,7 +582,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
                 wr.write(postData);
             }
             String response = readResponse(connection);
-            logger.debug("Response: " + response);
+            logger.debug("Response: {}", response);
             return 0;
         } catch (Exception ex) {
             logger.error("SetVolume error: {}", ex.toString());
@@ -647,17 +647,12 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
     }
 
     private String getPlayMode() {
-
-        String line = sendAVTransportToSpeaker("GetTransportInfo", "");
-        logger.info("response:" + line);
-
         String response = sendAVTransportToSpeaker("GetTransportSettings", "");
         try {
             String value = getDataFromXMLValue(response, 0);
             return value;
         } catch (Exception ex) {
             logger.error("GetPlayMode error: {}", ex.toString());
-
         }
         return "";
     }
@@ -670,7 +665,6 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             return value;
         } catch (Exception ex) {
             logger.error("GetPlayMode error: {}", ex.toString());
-
         }
         return "";
     }

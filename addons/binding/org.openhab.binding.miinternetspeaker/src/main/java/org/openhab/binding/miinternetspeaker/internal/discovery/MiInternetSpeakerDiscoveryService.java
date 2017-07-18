@@ -27,7 +27,7 @@ import static org.openhab.binding.miinternetspeaker.internal.Utils.readResponse;
  */
 public class MiInternetSpeakerDiscoveryService extends AbstractDiscoveryService implements ExtendedDiscoveryService {
 
-    private static final Logger logger =
+    private final Logger logger =
             LoggerFactory.getLogger(MiInternetSpeakerDiscoveryService.class);
 
     private DiscoveryServiceCallback discoveryServiceCallback;
