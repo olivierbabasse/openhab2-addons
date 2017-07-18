@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="miinternetspeaker"
+						  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+						  xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+						  xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<!-- Speaker Thing Type -->
+	<thing-type id="speaker">
+		<label>Xiaomi Mi Internet Speaker</label>
+		<description>Xiaomi Mi Internet Speaker compatible device</description>
+
+		<channels>
+			<channel id="bluetooth" typeId="bluetooth"/>
+			<channel id="command" typeId="command"/>
+			<channel id="volume" typeId="volume"/>
+			<channel id="sound" typeId="sound"/>
+			<channel id="sleep" typeId="sleep"/>
+			<channel id="playmode" typeId="playmode"/>
+			<channel id="artist" typeId="artist"/>
+			<channel id="title" typeId="title"/>
+			<channel id="status" typeId="status"/>
+		</channels>
+
+		<config-description uri="thing-type:miinternetspeaker:speaker">
+			<parameter name="deviceUrl" type="text">
+				<label>Mi Internet Speaker Device URL</label>
+				<description>The identifier of this Xiaomi Mi Speaker Device</description>
+				<required>true</required>
+				<advanced>true</advanced>
+			</parameter>
+		</config-description>
+	</thing-type>
+
+	<!-- Bluetooth Channel -->
+	<channel-type id="bluetooth">
+		<item-type>Switch</item-type>
+		<label>Mi Internet Speaker Binding Bluetooth Channel</label>
+		<description>A channel for controlling bluetooth capability of a Mi Internet Speaker device</description>
+		<state readOnly="false"></state>
+	</channel-type>
+
+	<!-- Volume Dimmer Channel -->
+	<channel-type id="volume">
+		<item-type>Dimmer</item-type>
+		<label>Mi Internet Speaker Binding Volume Channel</label>
+		<description>A channel for controlling volume of a Mi Internet Speaker device by dimmer/slider</description>
+		<state readOnly="false"></state>
+	</channel-type>
+
+	<!-- Command Channel -->
+	<channel-type id="command">
+		<item-type>String</item-type>
+		<label>Mi Internet Speaker Binding Command Channel</label>
+		<description>A channel for sending commands to a Mi Internet Speaker device</description>
+		<state readOnly="false"></state>
+	</channel-type>
+
+	<!-- Sound Mode Channel -->
+	<channel-type id="sound">
+		<item-type>String</item-type>
+		<label>Mi Internet Speaker Binding Sound Mode Channel</label>
+		<description>A channel for sound mode controlling of Mi Internet Speaker device</description>
+		<state readOnly="false"></state>
+	</channel-type>
+
+	<!-- Sleep Channel -->
+	<channel-type id="sleep">
+		<item-type>String</item-type>
+		<label>Mi Internet Speaker Binding Sleep Channel</label>
+		<description>A channel for sleep feature controlling of Mi Internet Speaker device</description>
+		<state readOnly="false"></state>
+	</channel-type>
+
+	<!-- Play Mode Channel -->
+	<channel-type id="playmode">
+		<item-type>String</item-type>
+		<label>Mi Internet Speaker Binding Play Mode Channel</label>
+		<description>A channel for play mode controlling of Mi Internet Speaker device (repeat all, one, shuffle)</description>
+		<state readOnly="false"></state>
+	</channel-type>
+
+	<!-- Artist Channel -->
+	<channel-type id="artist">
+		<item-type>String</item-type>
+		<label>Mi Internet Speaker Binding Artist Channel</label>
+		<description>A channel for displaying current song's artist name of Mi Internet Speaker device</description>
+		<state readOnly="true"></state>
+	</channel-type>
+
+	<!-- Title Channel -->
+	<channel-type id="title">
+		<item-type>String</item-type>
+		<label>Mi Internet Speaker Binding Title Channel</label>
+		<description>A channel for displaying current song's title of Mi Internet Speaker device</description>
+		<state readOnly="true"></state>
+	</channel-type>
+
+	<!-- Status Channel -->
+	<channel-type id="status">
+		<item-type>String</item-type>
+		<label>Mi Internet Speaker Binding Status Channel</label>
+		<description>A channel for displaying status (playing/pause/...) of Mi Internet Speaker device</description>
+		<state readOnly="true"></state>
+	</channel-type>
+</thing:thing-descriptions>
