@@ -7,18 +7,21 @@
  */
 package org.openhab.binding.efergyengage.handler;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.Gson;
 import org.eclipse.smarthome.core.library.types.DateTimeType;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.*;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.efergyengage.internal.EfergyEngageException;
 import org.openhab.binding.efergyengage.internal.EfergyEngageMeasurement;
 import org.openhab.binding.efergyengage.internal.config.EfergyEngageConfig;
+import org.openhab.binding.efergyengage.model.EfergyEngageGetEnergyResponse;
+import org.openhab.binding.efergyengage.model.EfergyEngageGetTokenResponse;
+import org.openhab.binding.efergyengage.model.EfergyEngageGetInstantResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +55,7 @@ public class EfergyEngageHandler extends BaseThingHandler {
     private String token = null;
     private int utcOffset;
 
-    //Gson parser
-    private final JsonParser parser = new JsonParser();
+    private Gson gson = new Gson();
 
     /**
      * Our configuration
@@ -67,13 +69,13 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
+        if(command.equals(RefreshType.REFRESH) && token != null) {
+            updateChannel(channelUID);
+        }
     }
 
     @Override
     public void initialize() {
-        // TODO: Initialize the thing. If done set status to ONLINE to indicate proper working.
-        // Long running initialization should be done asynchronously in background.
-
         logger.debug("Efergy Engage configuration");
         String thingUid = getThing().getUID().toString();
         thingConfig = getConfigAs(EfergyEngageConfig.class);
@@ -107,26 +109,25 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
             String line = readResponse(connection);
 
-            JsonObject jobject = parser.parse(line).getAsJsonObject();
-            String status = jobject.get("status").getAsString();
+            EfergyEngageGetTokenResponse response = gson.fromJson(line, EfergyEngageGetTokenResponse.class);
 
-            if (status.equals("ok")) {
-                token = jobject.get("token").getAsString();
+            if (response.getStatus().equals("ok")) {
+                token = response.getToken();
                 logger.debug("Efergy token: {}", token);
                 updateStatus(ThingStatus.ONLINE);
             } else {
                 logger.debug("Efergy login response: {}", line);
-                throw new EfergyEngageException(jobject.get("desc").getAsString());
+                throw new EfergyEngageException(response.getDesc());
             }
 
         } catch (MalformedURLException e) {
-            logger.error("The URL '{}' is malformed: {}", url, e.toString());
+            logger.error("The URL '{}' is malformed", url, e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         } catch (EfergyEngageException e) {
-            logger.error("Bad login response: {}", e.toString());
+            logger.error("Bad login response", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Can not access device as username and/or password are invalid");
         } catch (Exception e) {
-            logger.error("Cannot get Efergy Engage token: {}", e.toString());
+            logger.error("Cannot get Efergy Engage token", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
     }
@@ -144,20 +145,15 @@ public class EfergyEngageHandler extends BaseThingHandler {
             String line = readResponse(connection);
 
             //read value
-            JsonObject jobject = parser.parse(line).getAsJsonObject();
-            if (jobject != null && jobject.get("reading") != null) {
-                instant = jobject.get("reading").getAsInt();
-                logger.debug("Efergy reading: {}", instant);
-                measurement.setValue(instant);
-                measurement.setMilis(jobject.get("last_reading_time").getAsLong());
-            }
-
+            EfergyEngageGetInstantResponse response = gson.fromJson(line, EfergyEngageGetInstantResponse.class);
+            measurement.setValue(response.getReading());
+            measurement.setMilis(response.getLastReadingTime());
         } catch (MalformedURLException e) {
-            logger.error("The URL '{}' is malformed: {}", url, e.toString());
+            logger.error("The URL '{}' is malformed", url, e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
             return null;
         } catch (Exception e) {
-            logger.error("Cannot get Efergy Engage data: {}", e.toString());
+            logger.error("Cannot get Efergy Engage data", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
             return null;
         }
@@ -174,9 +170,9 @@ public class EfergyEngageHandler extends BaseThingHandler {
             @Override
             public void run() {
                 try {
-                        execute();
+                    execute();
                 } catch (Exception e) {
-                    logger.debug("Exception during poll : {}", e);
+                    logger.debug("Exception during poll", e);
                 }
             }
         }, 0, refresh, TimeUnit.SECONDS);
@@ -206,54 +202,46 @@ public class EfergyEngageHandler extends BaseThingHandler {
             return;
         }
 
-        EfergyEngageMeasurement instant = null;
-        EfergyEngageMeasurement dayTotal = null;
-        EfergyEngageMeasurement weekTotal = null;
-        EfergyEngageMeasurement monthTotal = null;
-        EfergyEngageMeasurement yearTotal = null;
-        State state;
-
-
         for (Channel channel : getThing().getChannels()) {
-            switch (channel.getUID().getId()) {
-                case CHANNEL_INSTANT:
-                    if (instant == null)
-                        instant = readInstant();
-                    state = new DecimalType(instant.getValue());
-                    updateState(channel.getUID(), state);
-                    break;
-                case CHANNEL_LAST_MEASUREMENT:
-                    if (instant == null)
-                        instant = readInstant();
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(new java.util.Date(instant.getMilis()));
-                    updateState(channel.getUID(), new DateTimeType(cal));
-                    break;
-                case CHANNEL_DAYTOTAL:
-                    if (dayTotal == null)
-                        dayTotal = readEnergy("day");
-                    state = new StringType((dayTotal.getValue() + " " + dayTotal.getUnit()));
-                    updateState(channel.getUID(), state);
-                    break;
-                case CHANNEL_WEEKTOTAL:
-                    if (weekTotal == null)
-                        weekTotal = readEnergy("week");
-                    state = new StringType((weekTotal.getValue() + " " + weekTotal.getUnit()));
-                    updateState(channel.getUID(), state);
-                    break;
-                case CHANNEL_MONTHTOTAL:
-                    if (monthTotal == null)
-                        monthTotal = readEnergy("month");
-                    state = new StringType((monthTotal.getValue() + " " + monthTotal.getUnit()));
-                    updateState(channel.getUID(), state);
-                    break;
-                case CHANNEL_YEARTOTAL:
-                    if (yearTotal == null)
-                        yearTotal = readEnergy("year");
-                    state = new StringType((yearTotal.getValue() + " " + yearTotal.getUnit()));
-                    updateState(channel.getUID(), state);
-                    break;
-            }
+            updateChannel(channel.getUID());
+        }
+    }
+
+    private void updateChannel(ChannelUID uid) {
+        EfergyEngageMeasurement value = null;
+        State state;
+        switch (uid.getId()) {
+            case CHANNEL_INSTANT:
+                value = readInstant();
+                state = new DecimalType(value.getValue());
+                updateState(uid, state);
+                break;
+            case CHANNEL_LAST_MEASUREMENT:
+                value = readInstant();
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(new java.util.Date(value.getMilis()));
+                updateState(uid, new DateTimeType(cal));
+                break;
+            case CHANNEL_DAYTOTAL:
+                value = readEnergy("day");
+                state = new StringType((value.getValue() + " " + value.getUnit()));
+                updateState(uid, state);
+                break;
+            case CHANNEL_WEEKTOTAL:
+                value = readEnergy("week");
+                state = new StringType((value.getValue() + " " + value.getUnit()));
+                updateState(uid, state);
+                break;
+            case CHANNEL_MONTHTOTAL:
+                value = readEnergy("month");
+                state = new StringType((value.getValue() + " " + value.getUnit()));
+                updateState(uid, state);
+                break;
+            case CHANNEL_YEARTOTAL:
+                value = readEnergy("year");
+                state = new StringType((value.getValue() + " " + value.getUnit()));
+                updateState(uid, state);
+                break;
         }
     }
 
@@ -269,20 +257,19 @@ public class EfergyEngageHandler extends BaseThingHandler {
             String line = readResponse(connection);
 
             //read value
-            JsonObject jobject = parser.parse(line).getAsJsonObject();
-            if (jobject != null && jobject.get("sum") != null && jobject.get("units") != null) {
-                String energy = jobject.get("sum").getAsString();
-                String units = jobject.get("units").getAsString();
+            EfergyEngageGetEnergyResponse response = gson.fromJson(line, EfergyEngageGetEnergyResponse.class);
 
-                logger.debug("Efergy reading for {} period: {} {}", period, energy, units);
-                measurement.setValue(Float.valueOf(energy.trim()).floatValue());
-                measurement.setUnit(units);
-            }
+            Float energy = response.getSum();
+            String units = response.getUnits();
+
+            logger.debug("Efergy reading for {} period: {} {}", period, energy, units);
+            measurement.setValue(energy);
+            measurement.setUnit(units);
         } catch (MalformedURLException e) {
-            logger.error("The URL '{}' is malformed: {}", url, e.toString());
+            logger.error("The URL '{}' is malformed", url, e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         } catch (Exception e) {
-            logger.error("Cannot get Efergy Engage data: {}", e.toString());
+            logger.error("Cannot get Efergy Engage data", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
         return measurement;
