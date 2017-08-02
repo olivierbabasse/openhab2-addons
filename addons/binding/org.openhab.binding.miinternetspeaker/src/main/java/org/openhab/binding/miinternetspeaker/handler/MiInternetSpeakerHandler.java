@@ -32,6 +32,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -181,7 +182,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         return "";
     }
 
-    private String sendMessageToSpeaker(String url, String urlParameters, String action) throws Exception{
+    private String sendMessageToSpeaker(String url, String urlParameters, String action) throws Exception {
         byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
 
         URL cookieUrl = new URL(url);
@@ -555,7 +556,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         try {
             url = deviceUrl + "upnp.org-RenderingControl-1/control";
             String urlParameters = XML_HEADER + SOAP_ENVELOPE + "<s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:GetVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel></u:GetVolume>" + SOAP_BODY_END + SOAP_ENVELOPE_END;
-            String response = sendMessageToSpeaker(url, urlParameters, "urn:schemas-upnp-org:service:RenderingControl:1#GetVolume" );
+            String response = sendMessageToSpeaker(url, urlParameters, "urn:schemas-upnp-org:service:RenderingControl:1#GetVolume");
             String volume = getDataFromXMLValue(response, 0);
             return Integer.parseInt(volume);
         } catch (Exception ex) {
@@ -609,7 +610,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             String value = getDataFromXMLValue(response, 0);
             return value;
         } catch (Exception ex) {
-            logger.error("GetPlayMode error", ex);
+            logger.error("GetStatus error", ex);
         }
         return "";
     }
@@ -619,5 +620,12 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         Document dom = builder.parse(new ByteArrayInputStream(xml.getBytes()));
         Node node = dom.getElementsByTagName("s:Envelope").item(0);
         return node.getChildNodes().item(0).getChildNodes().item(0).getChildNodes().item(item).getTextContent();
+    }
+
+    public void setModel(String manufacturer, String model) {
+        Map<String, String> properties = editProperties();
+        properties.put("Manufacturer", manufacturer);
+        properties.put("Model", model);
+        updateProperties(properties);
     }
 }

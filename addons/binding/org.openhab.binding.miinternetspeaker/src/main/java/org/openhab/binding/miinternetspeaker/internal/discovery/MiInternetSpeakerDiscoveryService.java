@@ -4,8 +4,10 @@ import org.eclipse.smarthome.config.discovery.AbstractDiscoveryService;
 import org.eclipse.smarthome.config.discovery.DiscoveryResultBuilder;
 import org.eclipse.smarthome.config.discovery.DiscoveryServiceCallback;
 import org.eclipse.smarthome.config.discovery.ExtendedDiscoveryService;
+import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
+import org.openhab.binding.miinternetspeaker.handler.MiInternetSpeakerHandler;
 import org.openhab.binding.miinternetspeaker.internal.MiInternetSpeakerDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,7 +157,6 @@ public class MiInternetSpeakerDiscoveryService extends AbstractDiscoveryService 
             String uuid = node.getChildNodes().item(1).getChildNodes().item(9).getTextContent().replace("uuid:", "");
             deviceUrl = location.replace("/Upnp/device.xml", "-MR/");
 
-            speakerDiscovered(friendlyName + " " + modelName, deviceUrl, uuid);
             if (!devices.containsKey(deviceUrl)) {
                 MiInternetSpeakerDevice device = new MiInternetSpeakerDevice(friendlyName, manufacturer, modelDescription, modelName);
                 devices.put(deviceUrl, device);
@@ -166,24 +167,30 @@ public class MiInternetSpeakerDiscoveryService extends AbstractDiscoveryService 
                 logger.info("Model name: {}", modelName);
                 logger.info("Uuid: {}", uuid);
             }
+            MiInternetSpeakerDevice device = devices.get(deviceUrl);
+            speakerDiscovered(friendlyName + " " + modelName, deviceUrl, uuid, device);
+
         } catch (Exception ex) {
             logger.error("Device discovery error: {}", ex.toString());
         }
     }
 
-    public void speakerDiscovered(String label, String deviceURL, String uuid) {
+    public void speakerDiscovered(String label, String deviceURL, String uuid, MiInternetSpeakerDevice device) {
         Map<String, Object> properties = new HashMap<>(1);
         properties.put("deviceUrl", deviceURL);
-        //properties.put("model", model);
 
         ThingUID thingUID = new ThingUID(BINDING_ID, THING_TYPE_SPEAKER.getId(), uuid);
 
-        if (discoveryServiceCallback.getExistingThing(thingUID) == null) {
+        Thing thing = discoveryServiceCallback.getExistingThing(thingUID);
+        if (thing == null) {
             logger.info("Detected a speaker - label: {} uuid: {}", label, uuid);
             thingDiscovered(
                     DiscoveryResultBuilder.create(thingUID).withThingType(THING_TYPE_SPEAKER).withProperties(properties)
                             .withRepresentationProperty("url").withLabel(label)
                             .build());
+        } else {
+            MiInternetSpeakerHandler handler = (MiInternetSpeakerHandler) thing.getHandler();
+            handler.setModel(device.getManufacturer(), device.getModelName());
         }
     }
 
