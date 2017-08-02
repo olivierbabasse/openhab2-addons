@@ -292,7 +292,6 @@ public class EfergyEngageHandler extends BaseThingHandler {
             URLConnection connection = valueUrl.openConnection();
 
             String line = readResponse(connection);
-            logger.info("Forecast: {}", line);
 
             //read value
             EfergyEngageGetForecastResponse response = gson.fromJson(line, EfergyEngageGetForecastResponse.class);
@@ -317,7 +316,9 @@ public class EfergyEngageHandler extends BaseThingHandler {
         while ((line = reader.readLine()) != null) {
             body.append(line + "\n");
         }
-        return body.toString();
+        String msg = body.toString();
+        logger.debug("Response: {}", msg);
+        return msg;
     }
 
 }
