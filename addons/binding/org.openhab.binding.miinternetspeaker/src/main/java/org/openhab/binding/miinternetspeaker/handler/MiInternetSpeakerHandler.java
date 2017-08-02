@@ -161,9 +161,9 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         try {
             url = deviceUrl.replace("-MR", "") + "xiaomi.com-SystemProperties-1/control";
             StringBuilder sb = new StringBuilder();
-            sb.append("<?xml version=\"1.0\"?>");
-            sb.append("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
-            sb.append("<s:Body>");
+            sb.append(XML_HEADER);
+            sb.append(SOAP_ENVELOPE);
+            sb.append(SOAP_BODY);
             sb.append("<u:SetString xmlns:u=\"urn:xiaomi-com:service:SystemProperties:1\">");
             sb.append("<VariableName>");
             sb.append(variable);
@@ -172,28 +172,32 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             sb.append(value);
             sb.append("</StringValue>");
             sb.append("</u:SetString>");
-            sb.append("</s:Body>");
-            sb.append("</s:Envelope>");
-            byte[] postData = sb.toString().getBytes(StandardCharsets.UTF_8);
-
-            URL cookieUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) cookieUrl.openConnection();
-
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
-            connection.setRequestProperty("soapaction", "urn:xiaomi-com:service:SystemProperties:1#SetString");
-            connection.setRequestProperty("User-Agent", USER_AGENT);
-            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                wr.write(postData);
-            }
-            String response = readResponse(connection);
-            logger.debug("Response: {}", response);
-            return response;
+            sb.append(SOAP_BODY_END);
+            sb.append(SOAP_ENVELOPE_END);
+            return sendMessageToSpeaker(url, sb.toString(), "urn:xiaomi-com:service:SystemProperties:1#SetString");
         } catch (Exception ex) {
-            logger.error("SendSetStringToSpeaker error: {}", ex.toString());
+            logger.error("SendSetStringToSpeaker error", ex);
         }
         return "";
+    }
+
+    private String sendMessageToSpeaker(String url, String urlParameters, String action) throws Exception{
+        byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
+
+        URL cookieUrl = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) cookieUrl.openConnection();
+
+        connection.setDoOutput(true);
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
+        connection.setRequestProperty("soapaction", action);
+        connection.setRequestProperty("User-Agent", USER_AGENT);
+        try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
+            wr.write(postData);
+        }
+        String response = readResponse(connection);
+        logger.debug("Response: {}", response);
+        return response;
     }
 
     private void sendCommandToSpeaker(String command) {
@@ -221,7 +225,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
                     logger.error("Unknown command: {}", command.toLowerCase());
             }
         } catch (Exception ex) {
-            logger.error("SendCommandToSpeaker error: {}", ex.toString());
+            logger.error("SendCommandToSpeaker error", ex);
         }
     }
 
@@ -278,7 +282,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             }
         } catch (Exception ex) {
             if (thing.getStatus().equals(ThingStatus.ONLINE)) {
-                logger.error("UpdatePlayingInfo error: {}", ex.toString());
+                logger.error("UpdatePlayingInfo error", ex);
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
             }
         }
@@ -342,7 +346,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
                 }
             }
         } catch (Exception ex) {
-            logger.error("GetPlayingInfo error: {}", ex.toString());
+            logger.error("GetPlayingInfo error", ex);
         }
         return null;
     }
@@ -390,9 +394,9 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         try {
             url = deviceUrl + "upnp.org-AVTransport-1/control";
             StringBuilder sb = new StringBuilder();
-            sb.append("<?xml version=\"1.0\"?>");
-            sb.append("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
-            sb.append("<s:Body>");
+            sb.append(XML_HEADER);
+            sb.append(SOAP_ENVELOPE);
+            sb.append(SOAP_BODY);
             sb.append("<u:");
             sb.append(command);
             sb.append(" xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\">");
@@ -401,27 +405,12 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             sb.append("</u:");
             sb.append(command);
             sb.append(">");
-            sb.append("</s:Body>");
-            sb.append("</s:Envelope>");
+            sb.append(SOAP_BODY_END);
+            sb.append(SOAP_ENVELOPE_END);
 
-            byte[] postData = sb.toString().getBytes(StandardCharsets.UTF_8);
-
-            URL cookieUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) cookieUrl.openConnection();
-
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
-            connection.setRequestProperty("soapaction", "urn:schemas-upnp-org:service:AVTransport:1#" + command);
-            connection.setRequestProperty("User-Agent", USER_AGENT);
-            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                wr.write(postData);
-            }
-            String response = readResponse(connection);
-            logger.debug("Response: {}", response);
-            return response;
+            return sendMessageToSpeaker(url, sb.toString(), "urn:schemas-upnp-org:service:AVTransport:1#" + command);
         } catch (Exception ex) {
-            logger.error("SendAVTransportToSpeaker error: {}", ex.toString());
+            logger.error("SendAVTransportToSpeaker error", ex);
         }
         return "";
     }
@@ -469,7 +458,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         try {
             return getDataFromXMLValue(response, 0);
         } catch (Exception ex) {
-            logger.error("GetBluetoothState error: {}", ex.toString());
+            logger.error("GetBluetoothState error", ex);
         }
         return "off";
     }
@@ -539,82 +528,38 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
 
         try {
             url = deviceUrl.replace("-MR", "") + "xiaomi.com-SystemProperties-1/control";
-            String urlParameters = "<?xml version=\"1.0\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\"><s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:GetString xmlns:u=\"urn:xiaomi-com:service:SystemProperties:1\"><VariableName>" + variable + "</VariableName></u:GetString></s:Body></s:Envelope>";
-            byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
-
-            URL cookieUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) cookieUrl.openConnection();
-
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
-            connection.setRequestProperty("soapaction", "urn:xiaomi-com:service:SystemProperties:1#GetString");
-            connection.setRequestProperty("User-Agent", USER_AGENT);
-            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                wr.write(postData);
-            }
-            String response = readResponse(connection);
-            logger.debug("Response: {}", response);
-            return response;
+            String urlParameters = XML_HEADER + SOAP_ENVELOPE + "<s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:GetString xmlns:u=\"urn:xiaomi-com:service:SystemProperties:1\"><VariableName>" + variable + "</VariableName></u:GetString>" + SOAP_BODY_END + SOAP_ENVELOPE_END;
+            return sendMessageToSpeaker(url, urlParameters, "urn:xiaomi-com:service:SystemProperties:1#GetString");
         } catch (Exception ex) {
-            logger.error("SendGetStringToSpeaker error: {}", ex.toString());
+            logger.error("SendGetStringToSpeaker error", ex);
         }
         return "";
     }
 
-    private int setVolume(int volume) {
+    private String setVolume(int volume) {
         String url;
 
         try {
             url = deviceUrl + "upnp.org-RenderingControl-1/control";
-            String urlParameters = "<?xml version=\"1.0\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\"><s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:SetVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>" + volume + "</DesiredVolume></u:SetVolume></s:Body></s:Envelope>";
-            byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
-
-            URL cookieUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) cookieUrl.openConnection();
-
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
-            connection.setRequestProperty("soapaction", "urn:schemas-upnp-org:service:RenderingControl:1#SetVolume");
-            connection.setRequestProperty("User-Agent", USER_AGENT);
-            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                wr.write(postData);
-            }
-            String response = readResponse(connection);
-            logger.debug("Response: {}", response);
-            return 0;
+            String urlParameters = XML_HEADER + SOAP_ENVELOPE + "<s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:SetVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>" + volume + "</DesiredVolume></u:SetVolume>" + SOAP_BODY_END + SOAP_ENVELOPE_END;
+            return sendMessageToSpeaker(url, urlParameters, "urn:schemas-upnp-org:service:RenderingControl:1#SetVolume");
         } catch (Exception ex) {
-            logger.error("SetVolume error: {}", ex.toString());
+            logger.error("SetVolume error", ex);
         }
-        return 0;
+        return "";
     }
 
     private int getVolume() {
         String url;
 
         try {
-
             url = deviceUrl + "upnp.org-RenderingControl-1/control";
-            String urlParameters = "<?xml version=\"1.0\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\"><s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:GetVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel></u:GetVolume></s:Body></s:Envelope>";
-            byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
-
-            URL cookieUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) cookieUrl.openConnection();
-
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
-            connection.setRequestProperty("soapaction", "urn:schemas-upnp-org:service:RenderingControl:1#GetVolume");
-            connection.setRequestProperty("User-Agent", USER_AGENT);
-            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                wr.write(postData);
-            }
-            String response = readResponse(connection);
+            String urlParameters = XML_HEADER + SOAP_ENVELOPE + "<s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:GetVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel></u:GetVolume>" + SOAP_BODY_END + SOAP_ENVELOPE_END;
+            String response = sendMessageToSpeaker(url, urlParameters, "urn:schemas-upnp-org:service:RenderingControl:1#GetVolume" );
             String volume = getDataFromXMLValue(response, 0);
             return Integer.parseInt(volume);
         } catch (Exception ex) {
-            logger.error("GetVolume error: {}", ex.toString());
+            logger.error("GetVolume error", ex);
         }
         return 0;
     }
@@ -630,7 +575,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
 
             return jobject.get("type").getAsString().toUpperCase();
         } catch (Exception ex) {
-            logger.error("GetSoundMode error: {}", ex.toString());
+            logger.error("GetSoundMode error", ex);
         }
         return "NORMAL";
     }
@@ -641,7 +586,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             String value = getDataFromXMLValue(response, 0);
             return value.split(",")[0];
         } catch (Exception ex) {
-            logger.error("GetSleepDelay error: {}", ex.toString());
+            logger.error("GetSleepDelay error", ex);
         }
         return "0";
     }
@@ -652,7 +597,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             String value = getDataFromXMLValue(response, 0);
             return value;
         } catch (Exception ex) {
-            logger.error("GetPlayMode error: {}", ex.toString());
+            logger.error("GetPlayMode error", ex);
         }
         return "";
     }
@@ -664,7 +609,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             String value = getDataFromXMLValue(response, 0);
             return value;
         } catch (Exception ex) {
-            logger.error("GetPlayMode error: {}", ex.toString());
+            logger.error("GetPlayMode error", ex);
         }
         return "";
     }

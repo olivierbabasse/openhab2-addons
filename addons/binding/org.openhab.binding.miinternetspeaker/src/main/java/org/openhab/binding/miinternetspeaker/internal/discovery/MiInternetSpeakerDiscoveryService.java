@@ -14,9 +14,13 @@ import org.w3c.dom.Node;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.openhab.binding.miinternetspeaker.MiInternetSpeakerBindingConstants.*;
 import static org.openhab.binding.miinternetspeaker.internal.Utils.isOKPacket;
@@ -170,6 +174,7 @@ public class MiInternetSpeakerDiscoveryService extends AbstractDiscoveryService 
     public void speakerDiscovered(String label, String deviceURL, String uuid) {
         Map<String, Object> properties = new HashMap<>(1);
         properties.put("deviceUrl", deviceURL);
+        //properties.put("model", model);
 
         ThingUID thingUID = new ThingUID(BINDING_ID, THING_TYPE_SPEAKER.getId(), uuid);
 

@@ -37,6 +37,11 @@ public class MiInternetSpeakerBindingConstants {
     // Other constants
     public static final String USER_AGENT = "Posix/200112.0 UPnP/1.1 umi/1.0";
     public static final String MCAST_ADDR = "239.255.255.250";
+    public static final String XML_HEADER = "<?xml version=\"1.0\"?>";
+    public static final String SOAP_ENVELOPE = "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">";
+    public static final String SOAP_ENVELOPE_END = "</s:Envelope>";
+    public static final String SOAP_BODY = "<s:Body>";
+    public static final String SOAP_BODY_END = "</s:Body>";
     public static final int MCAST_PORT = 1900;
     public static final int BUFFER_LENGTH = 1024;
     public static final int DISCOVERY_TIMEOUT_SEC = 10;
