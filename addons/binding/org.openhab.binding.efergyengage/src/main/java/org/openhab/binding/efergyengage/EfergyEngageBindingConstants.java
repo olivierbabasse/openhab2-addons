@@ -24,6 +24,8 @@ public class EfergyEngageBindingConstants {
 
     // List of all Channel ids
     public final static String CHANNEL_INSTANT = "instant";
+    public final static String CHANNEL_ESTIMATE = "estimate";
+    public final static String CHANNEL_COST = "cost";
     public final static String CHANNEL_LAST_MEASUREMENT = "last_measurement";
     public final static String CHANNEL_DAYTOTAL = "daytotal";
     public final static String CHANNEL_WEEKTOTAL = "weektotal";

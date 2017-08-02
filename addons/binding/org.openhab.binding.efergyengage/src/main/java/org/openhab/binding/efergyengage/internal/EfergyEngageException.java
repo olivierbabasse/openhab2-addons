@@ -1,7 +1,10 @@
 package org.openhab.binding.efergyengage.internal;
 
 /**
- * Created by Ondrej Pecta on 10. 8. 2016.
+ * The {@link EfergyEngageException} represents the exception during
+ * communication with the Efergy Engage cloud platform.
+ *
+ * @author Ondrej Pecta - Initial contribution
  */
 public class EfergyEngageException extends RuntimeException {
     private static final long serialVersionUID = 1L;

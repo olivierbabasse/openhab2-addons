@@ -1,7 +1,10 @@
 package org.openhab.binding.efergyengage.internal.config;
 
 /**
- * Created by Ondřej Pečta on 12. 8. 2016.
+ * The {@link EfergyEngageConfig} is responsible for representing the
+ * Efergy Engage Hub configuration.
+ *
+ * @author Ondrej Pecta - Initial contribution
  */
 public class EfergyEngageConfig {
 

@@ -17,11 +17,8 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.efergyengage.internal.EfergyEngageException;
-import org.openhab.binding.efergyengage.internal.EfergyEngageMeasurement;
+import org.openhab.binding.efergyengage.model.*;
 import org.openhab.binding.efergyengage.internal.config.EfergyEngageConfig;
-import org.openhab.binding.efergyengage.model.EfergyEngageGetEnergyResponse;
-import org.openhab.binding.efergyengage.model.EfergyEngageGetTokenResponse;
-import org.openhab.binding.efergyengage.model.EfergyEngageGetInstantResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +172,7 @@ public class EfergyEngageHandler extends BaseThingHandler {
                     logger.debug("Exception during poll", e);
                 }
             }
-        }, 0, refresh, TimeUnit.SECONDS);
+        }, 10, refresh, TimeUnit.SECONDS);
 
     }
 
@@ -209,11 +206,22 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
     private void updateChannel(ChannelUID uid) {
         EfergyEngageMeasurement value = null;
+        EfergyEngageEstimate est = null;
         State state;
         switch (uid.getId()) {
             case CHANNEL_INSTANT:
                 value = readInstant();
                 state = new DecimalType(value.getValue());
+                updateState(uid, state);
+                break;
+            case CHANNEL_ESTIMATE:
+                est = readForecast();
+                state = new DecimalType(est.getEstimate());
+                updateState(uid, state);
+                break;
+            case CHANNEL_COST:
+                est = readForecast();
+                state = new DecimalType(est.getPreviousSum());
                 updateState(uid, state);
                 break;
             case CHANNEL_LAST_MEASUREMENT:
@@ -273,6 +281,31 @@ public class EfergyEngageHandler extends BaseThingHandler {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
         return measurement;
+    }
+
+    private EfergyEngageEstimate readForecast() {
+        String url = null;
+
+        try {
+            url = EFERGY_URL + "/mobile_proxy/getForecast?token=" + token + "&dataType=cost&period=month&offset=" + utcOffset;
+            URL valueUrl = new URL(url);
+            URLConnection connection = valueUrl.openConnection();
+
+            String line = readResponse(connection);
+            logger.info("Forecast: {}", line);
+
+            //read value
+            EfergyEngageGetForecastResponse response = gson.fromJson(line, EfergyEngageGetForecastResponse.class);
+
+            return response.getMonth_tariff();
+        } catch (MalformedURLException e) {
+            logger.error("The URL '{}' is malformed", url, e);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
+        } catch (Exception e) {
+            logger.error("Cannot get Efergy Engage forecast", e);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
+        }
+        return null;
     }
 
     private String readResponse(URLConnection connection) throws IOException {

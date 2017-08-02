@@ -1,7 +1,10 @@
-package org.openhab.binding.efergyengage.internal;
+package org.openhab.binding.efergyengage.model;
 
 /**
- * Created by Ondrej Pecta on 10. 8. 2016.
+ * The {@link EfergyEngageMeasurement} represents the result value of
+ * power consumption read from the Efergy Engage cloud platform.
+ *
+ * @author Ondrej Pecta - Initial contribution
  */
 public class EfergyEngageMeasurement {
 
