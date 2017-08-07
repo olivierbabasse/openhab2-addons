@@ -45,9 +45,10 @@ public class JablotronDiscoveryService extends AbstractDiscoveryService implemen
         bridge.startDiscovery();
     }
 
-    public void oasisDiscovered(String label, String serviceId) {
+    public void oasisDiscovered(String label, String serviceId, String url) {
         Map<String, Object> properties = new HashMap<>(1);
         properties.put("serviceId", serviceId);
+        properties.put("url", url);
 
         ThingUID thingUID = new ThingUID(THING_TYPE_OASIS, bridge.getThing().getUID(), serviceId);
 

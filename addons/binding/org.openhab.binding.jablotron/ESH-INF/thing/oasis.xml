@@ -13,16 +13,71 @@
 		<description>A Jablotron Oasis alarm device.</description>
 
 		<channels>
-			<channel id="channel1" typeId="sample-channel"/>
+			<channel id="statusA" typeId="statusA"/>
+			<channel id="statusB" typeId="statusB"/>
+			<channel id="statusABC" typeId="statusABC"/>
+			<channel id="statusPGY" typeId="statusPGX"/>
+			<channel id="statusPGY" typeId="statusPGY"/>
+			<channel id="command" typeId="command"/>
+			<channel id="lastResponse" typeId="lastResponse"/>
+			<channel id="alarm" typeId="alarm"/>
 		</channels>
 		<config-description-ref uri="thing-type:jablotron:device"/>
 	</thing-type>
 
-	<!-- Sample Channel Type -->
-	<channel-type id="sample-channel">
-		<item-type>jablotronItem</item-type>
-		<label>Jablotron Binding Channel</label>
-		<description>Sample channel for Jablotron Binding</description>
+	<!-- StatusA -->
+	<channel-type id="statusA">
+		<item-type>Switch</item-type>
+		<label>OASIS Zone A Status Channel</label>
+		<description>Status of the A zone of your OASIS alarm</description>
 	</channel-type>
 
+	<!-- StatusB -->
+	<channel-type id="statusB">
+		<item-type>Switch</item-type>
+		<label>OASIS Zone B Status Channel</label>
+		<description>Status of the B zone of your OASIS alarm</description>
+	</channel-type>
+
+	<!-- StatusABC -->
+	<channel-type id="statusABC">
+		<item-type>Switch</item-type>
+		<label>OASIS Zone ABC Status Channel</label>
+		<description>Status of the ABC zone of your OASIS alarm</description>
+	</channel-type>
+
+	<!-- StatusPGX -->
+	<channel-type id="statusPGX">
+		<item-type>Switch</item-type>
+		<label>OASIS PGx Status Channel</label>
+		<description>Status of the PGX switch of your OASIS alarm</description>
+	</channel-type>
+
+	<!-- StatusPGY -->
+	<channel-type id="statusPGY">
+		<item-type>Switch</item-type>
+		<label>OASIS PGY Status Channel</label>
+		<description>Status of the PGY switch of your OASIS alarm</description>
+	</channel-type>
+
+	<!-- Alarm -->
+	<channel-type id="alarm">
+		<item-type>Switch</item-type>
+		<label>OASIS Alarm Channel</label>
+		<description>Status of the alarm of your OASIS alarm</description>
+	</channel-type>
+
+	<!-- Command -->
+	<channel-type id="command">
+		<item-type>Text</item-type>
+		<label>OASIS Command Channel</label>
+		<description>Channel for sending commands to your OASIS alarm</description>
+	</channel-type>
+
+	<!-- LastResponse -->
+	<channel-type id="lastResponse">
+		<item-type>DateTime</item-type>
+		<label>OASIS Last Response Time Channel</label>
+		<description>Date and time of last response of your OASIS alarm</description>
+	</channel-type>
 </thing:thing-descriptions>

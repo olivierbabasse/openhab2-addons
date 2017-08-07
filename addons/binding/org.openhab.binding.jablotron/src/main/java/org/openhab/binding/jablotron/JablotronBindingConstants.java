@@ -25,12 +25,19 @@ public class JablotronBindingConstants {
     public static final ThingTypeUID THING_TYPE_OASIS = new ThingTypeUID(BINDING_ID, "oasis");
 
 
-    // List of all Channel ids
-    public static final String CHANNEL_1 = "channel1";
+    // List of all OASIS Channel ids
+    public static final String CHANNEL_STATUS_A = "statusA";
+    public static final String CHANNEL_STATUS_B = "statusB";
+    public static final String CHANNEL_STATUS_ABC = "statusABC";
+    public static final String CHANNEL_STATUS_PGX = "statusPGx";
+    public static final String CHANNEL_STATUS_PGY = "statusPGy";
+    public static final String CHANNEL_COMMAND = "command";
+    public static final String CHANNEL_LAST_RESPONSE = "command";
+
 
     // Constants
     public static final String JABLOTRON_URL = "https://www.jablonet.net/";
-    public static final String SERVICE_URL = "app/oasis?service=";
+    public static final String OASIS_SERVICE_URL = "app/oasis?service=";
     public static final String AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.59 Safari/537.36";
 
 }

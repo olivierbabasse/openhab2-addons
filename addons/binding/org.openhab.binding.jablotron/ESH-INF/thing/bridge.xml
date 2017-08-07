@@ -9,18 +9,7 @@
 		<label>Jablotron Jablonet Bridge</label>
 		<description>A bridge to the Jablonet cloud service.</description>
 
-		<channels>
-			<channel id="channel1" typeId="sample-channel"/>
-		</channels>
 		<config-description-ref uri="bridge-type:jablotron:bridge"/>
 	</bridge-type>
-
-
-	<!-- Sample Channel Type -->
-	<channel-type id="sample-channel">
-		<item-type>jablotronItem</item-type>
-		<label>Jablotron Binding Channel</label>
-		<description>Sample channel for Jablotron Binding</description>
-	</channel-type>
 
 </thing:thing-descriptions>

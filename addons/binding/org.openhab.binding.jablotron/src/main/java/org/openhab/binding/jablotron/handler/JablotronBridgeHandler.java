@@ -1,14 +1,12 @@
 /**
  * Copyright (c) 2010-2017 by the respective copyright holders.
- *
+ * <p>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.jablotron.handler;
-
-import static org.openhab.binding.jablotron.JablotronBindingConstants.*;
 
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -18,7 +16,6 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.BridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.jablotron.JablotronBindingConstants;
 import org.openhab.binding.jablotron.config.JablotronConfig;
 import org.openhab.binding.jablotron.internal.JablotronResponse;
 import org.openhab.binding.jablotron.internal.discovery.JablotronDiscoveryService;
@@ -30,7 +27,8 @@ import java.io.DataOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
+
+import static org.openhab.binding.jablotron.JablotronBindingConstants.*;
 
 /**
  * The {@link JablotronBridgeHandler} is responsible for handling commands, which are
@@ -43,18 +41,12 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
     private final Logger logger = LoggerFactory.getLogger(JablotronBridgeHandler.class);
 
     private String session = "";
-    private int stavA = 0;
-    private int stavB = 0;
-    private int stavABC = 0;
-    private int stavPGX = 0;
-    private int stavPGY = 0;
 
     /**
      * Our configuration
      */
     protected JablotronConfig thingConfig;
     private JablotronDiscoveryService discoveryService;
-
 
     public JablotronBridgeHandler(Thing thing) {
         super(thing);
@@ -70,9 +62,7 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        if (channelUID.getId().equals(CHANNEL_1)) {
-            // TODO: handle command
-        }
+
     }
 
     @Override
@@ -81,21 +71,13 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         thingConfig = getConfigAs(JablotronConfig.class);
         thingConfig.setThingUid(thingUid);
 
-        login();
-        scheduler.schedule(() -> startDiscovery(), 1, TimeUnit.SECONDS);
+        startDiscovery();
     }
 
     private void login() {
         String url = null;
 
         try {
-            //login
-            stavA = 0;
-            stavB = 0;
-            stavABC = 0;
-            stavPGX = 0;
-            stavPGY = 0;
-
             url = JABLOTRON_URL + "ajax/login.php";
             String urlParameters = "login=" + thingConfig.getLogin() + "&heslo=" + thingConfig.getPassword() + "&aStatus=200&loginType=Login";
             byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
@@ -103,36 +85,34 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
             URL cookieUrl = new URL(url);
             HttpsURLConnection connection = (HttpsURLConnection) cookieUrl.openConnection();
 
-            synchronized (session) {
-                connection.setDoOutput(true);
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Referer", JABLOTRON_URL);
-                connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
-                connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+            connection.setDoOutput(true);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Referer", JABLOTRON_URL);
+            connection.setRequestProperty("Content-Length", Integer.toString(postData.length));
+            connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
 
-                setConnectionDefaults(connection);
-                try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                    wr.write(postData);
-                }
+            setConnectionDefaults(connection);
+            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
+                wr.write(postData);
+            }
 
-                JablotronResponse response = new JablotronResponse(connection);
-                if (response.getException() != null) {
-                    logger.error("JablotronResponse login exception: {}", response.getException());
-                    return;
-                }
+            JablotronResponse response = new JablotronResponse(connection);
+            if (response.getException() != null) {
+                logger.error("JablotronResponse login exception: {}", response.getException());
+                return;
+            }
 
-                if (!response.isOKStatus())
-                    return;
+            if (!response.isOKStatus())
+                return;
 
-                //get cookie
-                session = response.getCookie();
-                if (!session.equals("") ) {
-                    logger.debug("Successfully logged to Jablotron cloud!");
-                    updateStatus(ThingStatus.ONLINE);
-                } else {
-                    logger.error("Cannot log in to Jablotron cloud!");
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Cannot login to Jablonet cloud");
-                }
+            //get cookie
+            session = response.getCookie();
+            if (!session.equals("")) {
+                logger.debug("Successfully logged to Jablotron cloud!");
+                updateStatus(ThingStatus.ONLINE);
+            } else {
+                logger.error("Cannot log in to Jablotron cloud!");
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Cannot login to Jablonet cloud");
             }
 
         } catch (MalformedURLException e) {
@@ -161,7 +141,8 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
     }
 
     public void startDiscovery() {
-        if( !thing.getStatus().equals(ThingStatus.ONLINE)) {
+        login();
+        if (!thing.getStatus().equals(ThingStatus.ONLINE)) {
             return;
         }
 
@@ -193,29 +174,44 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
                 return;
             }
 
-            String serviceId = response.getServiceId(0);
+            for (int i = 0; i < response.getWidgetsCount(); i++) {
+                String serviceId = response.getServiceId(i);
+                url = response.getServiceUrl(i);
+                logger.debug("Found Jablotron service: {} id: {}", response.getServiceName(i), serviceId);
+                if (response.getServiceName(i).toLowerCase().equals(THING_TYPE_OASIS.getId())) {
+                    discoveryService.oasisDiscovered("Jablotron OASIS Alarm", serviceId, url);
 
-            //service request
-            url = response.getServiceUrl(0);
-            logger.info("Found Jablotron service: {} id: {}", response.getServiceName(0), serviceId);
+                } else {
+                    logger.error("Unsupported device discovered: {}", response.getServiceName(i));
+                }
+            }
+        } catch (Exception ex) {
+            logger.error("Cannot discover Jablotron services!", ex);
+        }
+        logout();
+    }
 
-            cookieUrl = new URL(url);
-            connection = (HttpsURLConnection) cookieUrl.openConnection();
+    private void logout() {
+
+        String url = JABLOTRON_URL + "logout";
+        try {
+            URL cookieUrl = new URL(url);
+
+            HttpsURLConnection connection = (HttpsURLConnection) cookieUrl.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Referer", JABLOTRON_URL);
             connection.setRequestProperty("Cookie", session);
             connection.setRequestProperty("Upgrade-Insecure-Requests", "1");
             setConnectionDefaults(connection);
 
-            if (connection.getResponseCode() == 200) {
-                logger.debug("Successfully logged to Jablotron cloud!");
-                discoveryService.oasisDiscovered("Jablotron OASIS Alarm", serviceId);
-            } else {
-                logger.error("Cannot initialize Jablotron service: {}", serviceId);
-            }
-        }
-        catch(Exception ex)  {
-            logger.error("Cannot discover Jablotron services!", ex);
+            JablotronResponse response = new JablotronResponse(connection);
+        } catch (Exception e) {
+            //Silence
+            //logger.error(e.toString());
+        } finally {
+            session = "";
         }
     }
+
+
 }

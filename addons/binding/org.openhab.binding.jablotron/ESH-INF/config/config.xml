@@ -11,6 +11,12 @@
             <advanced>true</advanced>
         </parameter>
 
+        <parameter name="url" type="text">
+            <label>Jablotron device url</label>
+            <description>The url of the Jablotron device used for initialization</description>
+            <required>true</required>
+        </parameter>
+
         <parameter name="refresh" type="integer" required="false">
             <label>Refresh refresh</label>
             <description>Specifies the refresh of thing states in seconds</description>
