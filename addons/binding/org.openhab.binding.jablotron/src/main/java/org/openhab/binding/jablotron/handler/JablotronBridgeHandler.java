@@ -50,7 +50,7 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
     /**
      * Our configuration
      */
-    protected JablotronConfig thingConfig;
+    protected JablotronConfig bridgeConfig;
     private JablotronDiscoveryService discoveryService;
 
     public JablotronBridgeHandler(Thing thing) {
@@ -73,8 +73,8 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
     @Override
     public void initialize() {
         String thingUid = getThing().getUID().toString();
-        thingConfig = getConfigAs(JablotronConfig.class);
-        thingConfig.setThingUid(thingUid);
+        bridgeConfig = getConfigAs(JablotronConfig.class);
+        bridgeConfig.setThingUid(thingUid);
 
         startDiscovery();
     }
@@ -84,7 +84,7 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
 
         try {
             url = JABLOTRON_URL + "ajax/login.php";
-            String urlParameters = "login=" + thingConfig.getLogin() + "&heslo=" + thingConfig.getPassword() + "&aStatus=200&loginType=Login";
+            String urlParameters = "login=" + bridgeConfig.getLogin() + "&heslo=" + bridgeConfig.getPassword() + "&aStatus=200&loginType=Login";
             byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
 
             URL cookieUrl = new URL(url);

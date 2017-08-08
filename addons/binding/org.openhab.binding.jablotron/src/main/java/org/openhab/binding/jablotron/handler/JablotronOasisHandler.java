@@ -48,7 +48,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
     private Gson gson = new Gson();
 
-    protected OasisConfig thingConfig;
+    private OasisConfig thingConfig;
     private String session = "";
     private int stavA = 0;
     private int stavB = 0;
@@ -139,25 +139,21 @@ public class JablotronOasisHandler extends BaseThingHandler {
         }
     }
 
-    private JablotronStatusResponse sendGetStatusRequestNew() {
+    private synchronized JablotronStatusResponse sendGetStatusRequest() {
 
         String url = JABLOTRON_URL + "app/oasis/ajax/stav.php?" + getBrowserTimestamp();
         try {
             URL cookieUrl = new URL(url);
 
-            synchronized (session) {
-                HttpsURLConnection connection = (HttpsURLConnection) cookieUrl.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("Referer", JABLOTRON_URL + OASIS_SERVICE_URL + thingConfig.getServiceId());
-                connection.setRequestProperty("Cookie", session);
-                connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
-                setConnectionDefaults(connection);
+            HttpsURLConnection connection = (HttpsURLConnection) cookieUrl.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Referer", JABLOTRON_URL + OASIS_SERVICE_URL + thingConfig.getServiceId());
+            connection.setRequestProperty("Cookie", session);
+            connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+            setConnectionDefaults(connection);
 
-                String line = Utils.readResponse(connection);
-                return gson.fromJson(line, JablotronStatusResponse.class);
-                //return new JablotronResponse(connection);
-            }
-
+            String line = Utils.readResponse(connection);
+            return gson.fromJson(line, JablotronStatusResponse.class);
         } catch (Exception e) {
             logger.error("sendGetStatusRequest exception", e);
             return new JablotronStatusResponse();
@@ -166,22 +162,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
     private boolean updateAlarmStatus() {
         logger.debug("updating alarm status");
-        //JablotronResponse response = sendGetStatusRequest();
-
-        /*
-        if (response.getException() != null) {
-            logger.error("sendGetStatusRequest exception: ", response.getException());
-            session = "";
-            return false;
-        }
-        logger.debug("sendGetStatusRequest response: {}", response.getResponse());
-
-        if (response.getResponseCode() != 200) {
-            logger.error("Cannot get alarm status, invalid response code: {}", response.getResponseCode());
-            return false;
-        }*/
-
-        JablotronStatusResponse response = sendGetStatusRequestNew();
+        JablotronStatusResponse response = sendGetStatusRequest();
 
         if (response == null || response.getStatus() != 200) {
             session = "";
@@ -189,7 +170,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
             inService = false;
             login();
             initializeDevice();
-            response = sendGetStatusRequestNew();
+            response = sendGetStatusRequest();
         }
         if (response.isBusyStatus()) {
             logger.warn("OASIS is busy...giving up");
@@ -253,24 +234,10 @@ public class JablotronOasisHandler extends BaseThingHandler {
             handleHttpRequestStatus(response.getStatus());
         } catch (Exception e) {
             logger.error("internalReceiveCommand exception", e);
-        } finally {
-            //logout();
         }
     }
 
-    /*
-    public void handleJablotronResult(JablotronResponse response) {
-        int result = response.getJablotronResult();
-        if (result != 1) {
-            logger.error("Received error result: {}", result);
-            if (response.getJson() != null) {
-                logger.error("JSON: {}", response.getJson().toString());
-            }
-        }
-    }*/
-
     private void handleHttpRequestStatus(int status) throws InterruptedException {
-        JablotronBridgeHandler handler = (JablotronBridgeHandler) this.getBridge().getHandler();
         switch (status) {
             case 0:
                 logout();
@@ -374,7 +341,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
             JablotronBridgeHandler bridge = (JablotronBridgeHandler) this.getBridge().getHandler();
             url = JABLOTRON_URL + "ajax/login.php";
-            String urlParameters = "login=" + bridge.thingConfig.getLogin() + "&heslo=" + bridge.thingConfig.getPassword() + "&aStatus=200&loginType=Login";
+            String urlParameters = "login=" + bridge.bridgeConfig.getLogin() + "&heslo=" + bridge.bridgeConfig.getPassword() + "&aStatus=200&loginType=Login";
             byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
 
             URL cookieUrl = new URL(url);
