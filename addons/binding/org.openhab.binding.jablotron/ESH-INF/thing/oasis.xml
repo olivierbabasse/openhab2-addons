@@ -16,10 +16,10 @@
 			<channel id="statusA" typeId="statusA"/>
 			<channel id="statusB" typeId="statusB"/>
 			<channel id="statusABC" typeId="statusABC"/>
-			<channel id="statusPGY" typeId="statusPGX"/>
+			<channel id="statusPGX" typeId="statusPGX"/>
 			<channel id="statusPGY" typeId="statusPGY"/>
 			<channel id="command" typeId="command"/>
-			<channel id="lastResponse" typeId="lastResponse"/>
+			<channel id="lastEvent" typeId="lastEvent"/>
 			<channel id="alarm" typeId="alarm"/>
 		</channels>
 		<config-description-ref uri="thing-type:jablotron:device"/>
@@ -75,9 +75,9 @@
 	</channel-type>
 
 	<!-- LastResponse -->
-	<channel-type id="lastResponse">
+	<channel-type id="lastEvent">
 		<item-type>DateTime</item-type>
-		<label>OASIS Last Response Time Channel</label>
-		<description>Date and time of last response of your OASIS alarm</description>
+		<label>OASIS Last Event Time Channel</label>
+		<description>Date and time of last event of your OASIS alarm</description>
 	</channel-type>
 </thing:thing-descriptions>

@@ -29,10 +29,10 @@ public class JablotronBindingConstants {
     public static final String CHANNEL_STATUS_A = "statusA";
     public static final String CHANNEL_STATUS_B = "statusB";
     public static final String CHANNEL_STATUS_ABC = "statusABC";
-    public static final String CHANNEL_STATUS_PGX = "statusPGx";
-    public static final String CHANNEL_STATUS_PGY = "statusPGy";
+    public static final String CHANNEL_STATUS_PGX = "statusPGX";
+    public static final String CHANNEL_STATUS_PGY = "statusPGY";
     public static final String CHANNEL_COMMAND = "command";
-    public static final String CHANNEL_LAST_RESPONSE = "command";
+    public static final String CHANNEL_LAST_EVENT = "lastEvent";
 
 
     // Constants

@@ -100,7 +100,7 @@ public class JablotronResponse {
             body.append(line).append("\n");
         }
         line = body.toString();
-        logger.debug(line);
+        logger.info(line);
         return line;
     }
 
