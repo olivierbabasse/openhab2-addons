@@ -8,6 +8,7 @@
  */
 package org.openhab.binding.jablotron.handler;
 
+import com.google.gson.Gson;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -17,8 +18,10 @@ import org.eclipse.smarthome.core.thing.binding.BridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.jablotron.config.JablotronConfig;
-import org.openhab.binding.jablotron.internal.JablotronResponse;
+import org.openhab.binding.jablotron.internal.Utils;
 import org.openhab.binding.jablotron.internal.discovery.JablotronDiscoveryService;
+import org.openhab.binding.jablotron.model.JablotronLoginResponse;
+import org.openhab.binding.jablotron.model.JablotronWidgetsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +42,8 @@ import static org.openhab.binding.jablotron.JablotronBindingConstants.*;
 public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(JablotronBridgeHandler.class);
+
+    private Gson gson = new Gson();
 
     private String session = "";
 
@@ -96,9 +101,10 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
                 wr.write(postData);
             }
 
-            JablotronResponse response = new JablotronResponse(connection);
-            if (response.getException() != null) {
-                logger.error("JablotronResponse login exception: {}", response.getException());
+            String line = Utils.readResponse(connection);
+            JablotronLoginResponse response = gson.fromJson(line, JablotronLoginResponse.class);
+            if (response == null) {
+                logger.error("Login response is not json! {}", line);
                 return;
             }
 
@@ -106,7 +112,7 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
                 return;
 
             //get cookie
-            session = response.getCookie();
+            session = Utils.getSessionCookie(connection);
             if (!session.equals("")) {
                 logger.debug("Successfully logged to Jablotron cloud!");
                 updateStatus(ThingStatus.ONLINE);
@@ -147,7 +153,6 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         }
 
         try {
-            //cloud request
             String url = JABLOTRON_URL + "ajax/widget-new.php?" + getBrowserTimestamp();
 
             URL cookieUrl = new URL(url);
@@ -158,31 +163,31 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
             connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
             setConnectionDefaults(connection);
 
-            JablotronResponse response = new JablotronResponse(connection);
+            String line = Utils.readResponse(connection);
+            JablotronWidgetsResponse response = gson.fromJson(line, JablotronWidgetsResponse.class);
 
-            if (response.getException() != null) {
-                logger.error("JablotronResponse widget exception: {}", response.getException().toString());
+            if (response == null) {
+                logger.error("Widgets response is not json object! {}", line);
                 return;
             }
 
-            if (response.getResponseCode() != 200 || !response.isOKStatus()) {
+            if (!response.isOKStatus()) {
                 return;
             }
 
-            if (response.getWidgetsCount() == 0) {
-                logger.error("Cannot found any jablotron device");
+            if (response.getCntWidgets() == 0) {
+                logger.error("Cannot found any Jablotron device");
                 return;
             }
 
-            for (int i = 0; i < response.getWidgetsCount(); i++) {
-                String serviceId = response.getServiceId(i);
-                url = response.getServiceUrl(i);
-                logger.debug("Found Jablotron service: {} id: {}", response.getServiceName(i), serviceId);
-                if (response.getServiceName(i).toLowerCase().equals(THING_TYPE_OASIS.getId())) {
+            for (int i = 0; i < response.getCntWidgets(); i++) {
+                String serviceId = String.valueOf(response.getWidgets().get(i).getId());
+                url = response.getWidgets().get(i).getUrl();
+                logger.debug("Found Jablotron service: {} id: {}", response.getWidgets().get(i).getName(), serviceId);
+                if (response.getWidgets().get(i).getTemplateService().equals(THING_TYPE_OASIS.getId())) {
                     discoveryService.oasisDiscovered("Jablotron OASIS Alarm", serviceId, url);
-
                 } else {
-                    logger.error("Unsupported device discovered: {}", response.getServiceName(i));
+                    logger.error("Unsupported device type discovered: {}", response.getWidgets().get(i).getTemplateService());
                 }
             }
         } catch (Exception ex) {
@@ -204,7 +209,8 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
             connection.setRequestProperty("Upgrade-Insecure-Requests", "1");
             setConnectionDefaults(connection);
 
-            JablotronResponse response = new JablotronResponse(connection);
+            String line = Utils.readResponse(connection);
+            logger.debug("logout... {}", line);
         } catch (Exception e) {
             //Silence
             //logger.error(e.toString());
@@ -212,6 +218,4 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
             session = "";
         }
     }
-
-
 }

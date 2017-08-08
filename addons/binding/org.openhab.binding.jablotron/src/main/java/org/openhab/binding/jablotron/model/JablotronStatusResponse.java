@@ -1,6 +1,7 @@
 package org.openhab.binding.jablotron.model;
 
 import com.google.gson.*;
+import com.google.gson.annotations.SerializedName;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -14,7 +15,8 @@ public class JablotronStatusResponse {
     private Gson gson = new Gson();
     private JsonParser parser = new JsonParser();
 
-    JablotronLastEntry last_entry;
+    @SerializedName("last_entry")
+    JablotronLastEntry lastEntry;
     int status;
     ArrayList<JablotronSection> sekce;
     ArrayList<JablotronSection> pgm;
@@ -24,7 +26,7 @@ public class JablotronStatusResponse {
     JsonElement vypis;
 
     public JablotronLastEntry getLast_entry() {
-        return last_entry;
+        return lastEntry;
     }
 
     public int getStatus() {
@@ -84,8 +86,8 @@ public class JablotronStatusResponse {
     }
 
     public Date getLastEventTime() {
-        if (last_entry != null) {
-            return getZonedDateTime(last_entry.cid.time);
+        if (lastEntry != null) {
+            return getZonedDateTime(lastEntry.cid.time);
         } else
             return null;
     }

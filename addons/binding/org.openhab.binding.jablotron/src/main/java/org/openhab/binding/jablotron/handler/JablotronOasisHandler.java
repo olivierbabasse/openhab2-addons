@@ -18,17 +18,15 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.jablotron.config.OasisConfig;
-import org.openhab.binding.jablotron.internal.JablotronResponse;
+import org.openhab.binding.jablotron.internal.Utils;
 import org.openhab.binding.jablotron.model.JablotronControlResponse;
+import org.openhab.binding.jablotron.model.JablotronLoginResponse;
 import org.openhab.binding.jablotron.model.JablotronStatusResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -81,64 +79,6 @@ public class JablotronOasisHandler extends BaseThingHandler {
         scheduler.scheduleWithFixedDelay(() -> {
             updateAlarmStatus();
         }, 1, thingConfig.getRefresh(), TimeUnit.SECONDS);
-    }
-
-    private void readAlarmStatus(JablotronResponse response) {
-        controlDisabled = response.isControlDisabled();
-
-        stavA = response.getSectionState(0);
-        stavB = response.getSectionState(1);
-        stavABC = response.getSectionState(2);
-
-        stavPGX = response.getPGState(0);
-        stavPGY = response.getPGState(1);
-
-        logger.debug("Stav A: {}", stavA);
-        logger.debug("Stav B: {}", stavB);
-        logger.debug("Stav ABC: {}", stavABC);
-        logger.debug("Stav PGX: {}", stavPGX);
-        logger.debug("Stav PGY: {}", stavPGY);
-
-        for (Channel channel : getThing().getChannels()) {
-            State newState = null;
-            String type = channel.getUID().getId();
-
-            switch (type) {
-                case "statusA":
-                    newState = (stavA == 1) ? OnOffType.ON : OnOffType.OFF;
-                    break;
-                case "statusB":
-                    newState = (stavB == 1) ? OnOffType.ON : OnOffType.OFF;
-                    break;
-                case "statusABC":
-                    newState = (stavABC == 1) ? OnOffType.ON : OnOffType.OFF;
-                    break;
-                case "statusPGX":
-                    newState = (stavPGX == 1) ? OnOffType.ON : OnOffType.OFF;
-                    break;
-                case "statusPGY":
-                    newState = (stavPGY == 1) ? OnOffType.ON : OnOffType.OFF;
-                    break;
-                case "alarm":
-                    newState = (response.isAlarm()) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
-                    break;
-                case "lastEvent":
-                    Date lastEvent = response.getLastResponseTime();
-                    if (lastEvent != null) {
-                        Calendar cal = Calendar.getInstance();
-                        cal.setTime(lastEvent);
-                        newState = new DateTimeType(cal);
-                    }
-                    break;
-                case "command":
-                    break;
-            }
-
-            if (newState != null) {
-                //eventPublisher.postUpdate(itemName, newState);
-                updateState(channel.getUID(), newState);
-            }
-        }
     }
 
     private void readAlarmStatusNew(JablotronStatusResponse response) {
@@ -199,29 +139,6 @@ public class JablotronOasisHandler extends BaseThingHandler {
         }
     }
 
-    private JablotronResponse sendGetStatusRequest() {
-
-        String url = JABLOTRON_URL + "app/oasis/ajax/stav.php?" + getBrowserTimestamp();
-        try {
-            URL cookieUrl = new URL(url);
-
-            synchronized (session) {
-                HttpsURLConnection connection = (HttpsURLConnection) cookieUrl.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("Referer", JABLOTRON_URL + OASIS_SERVICE_URL + thingConfig.getServiceId());
-                connection.setRequestProperty("Cookie", session);
-                connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
-                setConnectionDefaults(connection);
-
-                return new JablotronResponse(connection);
-            }
-
-        } catch (Exception e) {
-            logger.error("sendGetStatusRequest exception", e);
-            return new JablotronResponse(e);
-        }
-    }
-
     private JablotronStatusResponse sendGetStatusRequestNew() {
 
         String url = JABLOTRON_URL + "app/oasis/ajax/stav.php?" + getBrowserTimestamp();
@@ -236,7 +153,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
                 setConnectionDefaults(connection);
 
-                String line = readResponse(connection);
+                String line = Utils.readResponse(connection);
                 return gson.fromJson(line, JablotronStatusResponse.class);
                 //return new JablotronResponse(connection);
             }
@@ -245,20 +162,6 @@ public class JablotronOasisHandler extends BaseThingHandler {
             logger.error("sendGetStatusRequest exception", e);
             return new JablotronStatusResponse();
         }
-    }
-
-    private String readResponse(HttpsURLConnection connection) throws Exception {
-        InputStream stream = connection.getInputStream();
-        String line;
-        StringBuilder body = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-
-        while ((line = reader.readLine()) != null) {
-            body.append(line).append("\n");
-        }
-        line = body.toString();
-        logger.debug(line);
-        return line;
     }
 
     private boolean updateAlarmStatus() {
@@ -413,10 +316,10 @@ public class JablotronOasisHandler extends BaseThingHandler {
             try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
                 wr.write(postData);
             }
-            String line = readResponse(connection);
+            String line = Utils.readResponse(connection);
             response = gson.fromJson(line, JablotronControlResponse.class);
 
-            logger.debug("sendUserCode response status: {}", response.getStatus());
+            logger.debug("sendUserCode result: {}", response.getVysledek());
             return response;
         } catch (Exception ex) {
             logger.error("sendUserCode exception", ex);
@@ -437,8 +340,8 @@ public class JablotronOasisHandler extends BaseThingHandler {
             connection.setRequestProperty("Upgrade-Insecure-Requests", "1");
             setConnectionDefaults(connection);
 
-            JablotronResponse response = new JablotronResponse(connection);
-            logger.info("logout...");
+            String line = Utils.readResponse(connection);
+            logger.debug("logout... {}", line);
             updateStatus(ThingStatus.OFFLINE);
         } catch (Exception e) {
             //Silence
@@ -488,9 +391,10 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 wr.write(postData);
             }
 
-            JablotronResponse response = new JablotronResponse(connection);
-            if (response.getException() != null) {
-                logger.error("JablotronResponse login exception: {}", response.getException());
+            String line = Utils.readResponse(connection);
+            JablotronLoginResponse response = gson.fromJson(line, JablotronLoginResponse.class);
+            if (response == null) {
+                logger.error("Login response is not json! {}", line);
                 return;
             }
 
@@ -498,7 +402,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 return;
 
             //get cookie
-            session = response.getCookie();
+            session = Utils.getSessionCookie(connection);
             if (!session.equals("")) {
                 logger.debug("Successfully logged to Jablonet cloud!");
             } else {
