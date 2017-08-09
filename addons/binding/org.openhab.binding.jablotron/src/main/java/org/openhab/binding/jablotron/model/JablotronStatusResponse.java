@@ -77,7 +77,7 @@ public class JablotronStatusResponse {
         return isAlarm == 1;
     }
 
-    public boolean hasReport() {
+    public boolean hasEvents() {
         return vypis != null && !vypis.equals(JsonNull.INSTANCE);
     }
 
@@ -98,13 +98,13 @@ public class JablotronStatusResponse {
         return Date.from(zdt.toInstant());
     }
 
-    public void getReport() {
-        if (!hasReport()) {
-            return;
+    public ArrayList<JablotronEvent> getEvents() {
+        if (!hasEvents()) {
+            return null;
         }
 
+        ArrayList<JablotronEvent> result = new ArrayList<>();
 
-        //JsonObject jobject = parser.parse(vypis).getAsJsonObject();
         JsonObject jobject = vypis.getAsJsonObject();
         for (Map.Entry<String, JsonElement> entry : jobject.entrySet()) {
             String key = entry.getKey();
@@ -114,13 +114,13 @@ public class JablotronStatusResponse {
                 for (Map.Entry<String, JsonElement> eventEntry : event.entrySet()) {
                     String eventKey = eventEntry.getKey();
                     if (event.get(eventKey) instanceof JsonObject) {
-                        //JsonObject eventData = event.get(eventKey).getAsJsonObject();
                         JablotronEvent ev = gson.fromJson(event.get(eventKey), JablotronEvent.class);
-                        //logger.info("Time: " + eventKey + " code: " + eventData.get("code").getAsString() + " event: " + eventData.get("event").getAsString());
+                        result.add(ev);
                     }
                 }
 
             }
         }
+        return result;
     }
 }

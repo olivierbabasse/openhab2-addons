@@ -20,6 +20,7 @@ import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.jablotron.config.OasisConfig;
 import org.openhab.binding.jablotron.internal.Utils;
 import org.openhab.binding.jablotron.model.JablotronControlResponse;
+import org.openhab.binding.jablotron.model.JablotronEvent;
 import org.openhab.binding.jablotron.model.JablotronLoginResponse;
 import org.openhab.binding.jablotron.model.JablotronStatusResponse;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.io.DataOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -160,7 +162,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
         }
     }
 
-    private boolean updateAlarmStatus() {
+    private synchronized boolean updateAlarmStatus() {
         logger.debug("updating alarm status");
         JablotronStatusResponse response = sendGetStatusRequest();
 
@@ -177,8 +179,11 @@ public class JablotronOasisHandler extends BaseThingHandler {
             logout();
             return false;
         }
-        if (response.hasReport()) {
-            response.getReport();
+        if (response.hasEvents()) {
+            ArrayList<JablotronEvent> events = response.getEvents();
+            for (JablotronEvent event : events) {
+                logger.info("Found event: {} {} {}", event.getDatum(), event.getCode(), event.getEvent());
+            }
         }
 
         inService = response.inService();
@@ -250,11 +255,15 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 break;
             case 800:
                 login();
+                initializeDevice();
                 break;
             case 200:
-                updateAlarmStatus();
-                Thread.sleep(8000);
-                updateAlarmStatus();
+                scheduler.schedule(() -> {
+                    updateAlarmStatus();
+                }, 0, TimeUnit.SECONDS);
+                scheduler.schedule(() -> {
+                    updateAlarmStatus();
+                }, 10, TimeUnit.SECONDS);
                 break;
             default:
                 logger.error("Unknown status code received: {}", status);
