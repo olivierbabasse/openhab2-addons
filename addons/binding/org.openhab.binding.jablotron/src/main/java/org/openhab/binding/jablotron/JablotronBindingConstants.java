@@ -32,7 +32,9 @@ public class JablotronBindingConstants {
     public static final String CHANNEL_STATUS_PGX = "statusPGX";
     public static final String CHANNEL_STATUS_PGY = "statusPGY";
     public static final String CHANNEL_COMMAND = "command";
+    public static final String CHANNEL_ALARM = "alarm";
     public static final String CHANNEL_LAST_EVENT = "lastEvent";
+    public static final String CHANNEL_LAST_EVENT_TIME = "lastEventTime";
 
 
     // Constants

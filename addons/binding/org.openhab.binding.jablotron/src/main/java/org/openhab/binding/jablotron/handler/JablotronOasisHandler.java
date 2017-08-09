@@ -104,25 +104,25 @@ public class JablotronOasisHandler extends BaseThingHandler {
             String type = channel.getUID().getId();
 
             switch (type) {
-                case "statusA":
+                case CHANNEL_STATUS_A:
                     newState = (stavA == 1) ? OnOffType.ON : OnOffType.OFF;
                     break;
-                case "statusB":
+                case CHANNEL_STATUS_B:
                     newState = (stavB == 1) ? OnOffType.ON : OnOffType.OFF;
                     break;
-                case "statusABC":
+                case CHANNEL_STATUS_ABC:
                     newState = (stavABC == 1) ? OnOffType.ON : OnOffType.OFF;
                     break;
-                case "statusPGX":
+                case CHANNEL_STATUS_PGX:
                     newState = (stavPGX == 1) ? OnOffType.ON : OnOffType.OFF;
                     break;
-                case "statusPGY":
+                case CHANNEL_STATUS_PGY:
                     newState = (stavPGY == 1) ? OnOffType.ON : OnOffType.OFF;
                     break;
-                case "alarm":
+                case CHANNEL_ALARM:
                     newState = (response.isAlarm()) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
                     break;
-                case "lastEvent":
+                case CHANNEL_LAST_EVENT_TIME:
                     Date lastEvent = response.getLastEventTime();
                     if (lastEvent != null) {
                         Calendar cal = Calendar.getInstance();
@@ -130,7 +130,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
                         newState = new DateTimeType(cal);
                     }
                     break;
-                case "command":
+                default:
                     break;
             }
 
@@ -183,6 +183,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
             ArrayList<JablotronEvent> events = response.getEvents();
             for (JablotronEvent event : events) {
                 logger.info("Found event: {} {} {}", event.getDatum(), event.getCode(), event.getEvent());
+                updateLastEvent(event.getCode());
             }
         }
 
@@ -201,6 +202,14 @@ public class JablotronOasisHandler extends BaseThingHandler {
             return false;
         }
         return true;
+    }
+
+    private void updateLastEvent(String code) {
+        for (Channel channel : getThing().getChannels()) {
+            if (channel.getUID().getId().equals(CHANNEL_LAST_EVENT)) {
+                updateState(channel.getUID(), new StringType(code));
+            }
+        }
     }
 
 

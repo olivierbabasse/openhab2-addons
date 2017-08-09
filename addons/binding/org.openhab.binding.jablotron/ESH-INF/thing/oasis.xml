@@ -20,6 +20,7 @@
 			<channel id="statusPGY" typeId="statusPGY"/>
 			<channel id="command" typeId="command"/>
 			<channel id="lastEvent" typeId="lastEvent"/>
+			<channel id="lastEventTime" typeId="lastEventTime"/>
 			<channel id="alarm" typeId="alarm"/>
 		</channels>
 		<config-description-ref uri="thing-type:jablotron:device"/>
@@ -74,8 +75,15 @@
 		<description>Channel for sending commands to your OASIS alarm</description>
 	</channel-type>
 
-	<!-- LastResponse -->
+	<!-- LastEvent -->
 	<channel-type id="lastEvent">
+		<item-type>Text</item-type>
+		<label>OASIS Last Event Code Channel</label>
+		<description>Code of last event of your OASIS alarm</description>
+	</channel-type>
+
+	<!-- LastEventTime -->
+	<channel-type id="lastEventTime">
 		<item-type>DateTime</item-type>
 		<label>OASIS Last Event Time Channel</label>
 		<description>Date and time of last event of your OASIS alarm</description>
