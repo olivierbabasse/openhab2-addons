@@ -177,6 +177,8 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             sb.append(SOAP_BODY_END);
             sb.append(SOAP_ENVELOPE_END);
             return sendMessageToSpeaker(url, sb.toString(), "urn:xiaomi-com:service:SystemProperties:1#SetString");
+        } catch (NoRouteToHostException ex) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
         } catch (Exception ex) {
             logger.error("SendSetStringToSpeaker error", ex);
         }
