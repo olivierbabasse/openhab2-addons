@@ -78,8 +78,14 @@ public class JablotronOasisHandler extends BaseThingHandler {
     @Override
     public void initialize() {
         thingConfig = getConfigAs(OasisConfig.class);
+        scheduler.schedule(() -> {
+            doInit();
+        }, 0, TimeUnit.SECONDS);
+    }
+
+    private void doInit() {
         login();
-        initializeDevice();
+        initializeService();
 
         scheduler.scheduleWithFixedDelay(() -> {
             updateAlarmStatus();
@@ -147,7 +153,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
     private synchronized JablotronStatusResponse sendGetStatusRequest() {
 
-        String url = JABLOTRON_URL + "app/oasis/ajax/stav.php?" + getBrowserTimestamp();
+        String url = JABLOTRON_URL + "app/oasis/ajax/stav.php?" + Utils.getBrowserTimestamp();
         try {
             URL cookieUrl = new URL(url);
 
@@ -185,7 +191,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
             controlDisabled = true;
             inService = false;
             login();
-            initializeDevice();
+            initializeService();
             response = sendGetStatusRequest();
         }
         if (response.isBusyStatus()) {
@@ -222,7 +228,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
         logger.info("Doing relogin");
         logout();
         login();
-        initializeDevice();
+        initializeService();
     }
 
     private void updateLastEvent(String code) {
@@ -240,7 +246,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
         try {
             if (!getThing().getStatus().equals(ThingStatus.ONLINE)) {
                 login();
-                initializeDevice();
+                initializeService();
             }
             if (!updateAlarmStatus()) {
                 logger.error("Cannot send user code due to alarm status!");
@@ -285,7 +291,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 break;
             case 800:
                 login();
-                initializeDevice();
+                initializeService();
                 break;
             case 200:
                 scheduler.schedule(() -> {
@@ -425,11 +431,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
         }
     }
 
-    private String getBrowserTimestamp() {
-        return "_=" + System.currentTimeMillis();
-    }
-
-    private void initializeDevice() {
+    private void initializeService() {
         String url = thingConfig.getUrl();
         String serviceId = thingConfig.getServiceId();
         try {
@@ -442,7 +444,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
             setConnectionDefaults(connection);
 
             if (connection.getResponseCode() == 200) {
-                logger.debug("Successfully initialized Jabotron service: {}", serviceId);
+                logger.info("Jablotron OASIS service: {} successfully initialized", serviceId);
                 updateStatus(ThingStatus.ONLINE);
             } else {
                 logger.error("Cannot initialize Jablotron service: {}", serviceId);

@@ -30,6 +30,7 @@ import java.io.DataOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import static org.openhab.binding.jablotron.JablotronBindingConstants.*;
 
@@ -76,7 +77,9 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         bridgeConfig = getConfigAs(JablotronConfig.class);
         bridgeConfig.setThingUid(thingUid);
 
-        startDiscovery();
+        scheduler.scheduleWithFixedDelay(() -> {
+            startDiscovery();
+        }, 1, bridgeConfig.getRefresh(), TimeUnit.SECONDS);
     }
 
     private void login() {
@@ -130,10 +133,6 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         }
     }
 
-    private String getBrowserTimestamp() {
-        return "_=" + System.currentTimeMillis();
-    }
-
     private void setConnectionDefaults(HttpsURLConnection connection) {
         connection.setInstanceFollowRedirects(false);
         connection.setRequestProperty("User-Agent", AGENT);
@@ -151,9 +150,13 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         if (!thing.getStatus().equals(ThingStatus.ONLINE)) {
             return;
         }
+        discoverServices();
+        logout();
+    }
 
+    private void discoverServices() {
         try {
-            String url = JABLOTRON_URL + "ajax/widget-new.php?" + getBrowserTimestamp();
+            String url = JABLOTRON_URL + "ajax/widget-new.php?" + Utils.getBrowserTimestamp();
 
             URL cookieUrl = new URL(url);
             HttpsURLConnection connection = (HttpsURLConnection) cookieUrl.openConnection();
@@ -193,7 +196,6 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         } catch (Exception ex) {
             logger.error("Cannot discover Jablotron services!", ex);
         }
-        logout();
     }
 
     private void logout() {

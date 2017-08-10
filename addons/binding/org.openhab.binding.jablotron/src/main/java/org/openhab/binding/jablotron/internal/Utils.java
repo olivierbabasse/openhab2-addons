@@ -33,4 +33,8 @@ public class Utils {
         //logger.debug(line);
         return line;
     }
+
+    public static String getBrowserTimestamp() {
+        return "_=" + System.currentTimeMillis();
+    }
 }
