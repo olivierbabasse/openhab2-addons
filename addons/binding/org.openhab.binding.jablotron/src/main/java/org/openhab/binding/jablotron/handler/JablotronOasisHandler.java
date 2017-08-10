@@ -69,7 +69,9 @@ public class JablotronOasisHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         if (channelUID.getId().equals(CHANNEL_COMMAND) && command instanceof StringType) {
-            sendCommand(command.toString(), thingConfig.getUrl());
+            scheduler.schedule(() -> {
+                sendCommand(command.toString(), thingConfig.getUrl());
+            }, 0, TimeUnit.SECONDS);
         }
     }
 
