@@ -59,6 +59,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
     private int stavPGY = 0;
     private boolean controlDisabled = true;
     private boolean inService = true;
+    private int lastHours = -1;
 
 
     public JablotronOasisHandler(Thing thing) {
@@ -84,6 +85,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
     }
 
     private void readAlarmStatusNew(JablotronStatusResponse response) {
+        logger.debug("Reading alarm status...");
         controlDisabled = response.isControlDisabled();
 
         stavA = response.getSekce().get(0).getStav();
@@ -158,12 +160,22 @@ public class JablotronOasisHandler extends BaseThingHandler {
             return gson.fromJson(line, JablotronStatusResponse.class);
         } catch (Exception e) {
             logger.error("sendGetStatusRequest exception", e);
-            return new JablotronStatusResponse();
+            return null;
         }
     }
 
     private synchronized boolean updateAlarmStatus() {
-        logger.debug("updating alarm status");
+        logger.debug("updating alarm status...");
+
+        // relogin every hour
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        int hours = cal.get(Calendar.HOUR_OF_DAY);
+        if (lastHours >= 0 && lastHours != hours) {
+            relogin();
+        }
+        lastHours = hours;
+
         JablotronStatusResponse response = sendGetStatusRequest();
 
         if (response == null || response.getStatus() != 200) {
@@ -182,7 +194,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
         if (response.hasEvents()) {
             ArrayList<JablotronEvent> events = response.getEvents();
             for (JablotronEvent event : events) {
-                logger.info("Found event: {} {} {}", event.getDatum(), event.getCode(), event.getEvent());
+                logger.debug("Found event: {} {} {}", event.getDatum(), event.getCode(), event.getEvent());
                 updateLastEvent(event.getCode());
             }
         }
@@ -202,6 +214,13 @@ public class JablotronOasisHandler extends BaseThingHandler {
             return false;
         }
         return true;
+    }
+
+    private void relogin() {
+        logger.info("Doing relogin");
+        logout();
+        login();
+        initializeDevice();
     }
 
     private void updateLastEvent(String code) {
