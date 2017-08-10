@@ -75,7 +75,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("received command {} for channel {}", command, channelUID.getId());
 
-        if (command.equals(RefreshType.REFRESH)) {
+        if (!thing.getStatus().equals(ThingStatus.ONLINE) || command.equals(RefreshType.REFRESH)) {
             return;
         }
 
