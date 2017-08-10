@@ -253,6 +253,9 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         try {
             if (statuses.length > 0) {
                 String status = getStatus();
+                if (status == null) {
+                    return;
+                }
                 for (Object channel : statuses) {
                     State newState = new StringType(status);
                     updateState(((Channel) channel).getUID(), newState);
@@ -468,9 +471,14 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         logger.debug("execute() method is called!");
 
         Object[] items;
-        if (!deviceUrl.equals("")) {
-            //update playing info
-            updatePlayingInfo();
+        if (deviceUrl.equals("")) {
+            return;
+        }
+
+        //update playing info
+        updatePlayingInfo();
+
+        if (thing.getStatus().equals(ThingStatus.ONLINE)) {
 
             //update bluetooth value
             items = getBluetoothItems();
@@ -610,9 +618,12 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             String value = getDataFromXMLValue(response, 0);
             return value;
         } catch (Exception ex) {
-            logger.error("GetStatus error", ex);
+            if (thing.getStatus().equals(ThingStatus.ONLINE)) {
+                logger.error("GetStatus error", ex);
+            }
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
         }
-        return "";
+        return null;
     }
 
     private String getDataFromXMLValue(String xml, int item) throws Exception {
