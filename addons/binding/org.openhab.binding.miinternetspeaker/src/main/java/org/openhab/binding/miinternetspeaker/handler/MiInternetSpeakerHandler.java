@@ -29,6 +29,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
 import java.net.HttpURLConnection;
+import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -413,6 +414,8 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             sb.append(SOAP_ENVELOPE_END);
 
             return sendMessageToSpeaker(url, sb.toString(), "urn:schemas-upnp-org:service:AVTransport:1#" + command);
+        } catch (NoRouteToHostException ex) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
         } catch (Exception ex) {
             logger.error("SendAVTransportToSpeaker error", ex);
         }
@@ -539,6 +542,8 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             url = deviceUrl.replace("-MR", "") + "xiaomi.com-SystemProperties-1/control";
             String urlParameters = XML_HEADER + SOAP_ENVELOPE + "<s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:GetString xmlns:u=\"urn:xiaomi-com:service:SystemProperties:1\"><VariableName>" + variable + "</VariableName></u:GetString>" + SOAP_BODY_END + SOAP_ENVELOPE_END;
             return sendMessageToSpeaker(url, urlParameters, "urn:xiaomi-com:service:SystemProperties:1#GetString");
+        } catch (NoRouteToHostException ex) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
         } catch (Exception ex) {
             logger.error("SendGetStringToSpeaker error", ex);
         }
@@ -552,6 +557,8 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             url = deviceUrl + "upnp.org-RenderingControl-1/control";
             String urlParameters = XML_HEADER + SOAP_ENVELOPE + "<s:Body s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><u:SetVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>" + volume + "</DesiredVolume></u:SetVolume>" + SOAP_BODY_END + SOAP_ENVELOPE_END;
             return sendMessageToSpeaker(url, urlParameters, "urn:schemas-upnp-org:service:RenderingControl:1#SetVolume");
+        } catch (NoRouteToHostException ex) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
         } catch (Exception ex) {
             logger.error("SetVolume error", ex);
         }
@@ -567,6 +574,8 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             String response = sendMessageToSpeaker(url, urlParameters, "urn:schemas-upnp-org:service:RenderingControl:1#GetVolume");
             String volume = getDataFromXMLValue(response, 0);
             return Integer.parseInt(volume);
+        } catch (NoRouteToHostException ex) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
         } catch (Exception ex) {
             logger.error("GetVolume error", ex);
         }
@@ -618,10 +627,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             String value = getDataFromXMLValue(response, 0);
             return value;
         } catch (Exception ex) {
-            if (thing.getStatus().equals(ThingStatus.ONLINE)) {
-                logger.error("GetStatus error", ex);
-            }
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
+            logger.error("GetStatus error", ex);
         }
         return null;
     }
