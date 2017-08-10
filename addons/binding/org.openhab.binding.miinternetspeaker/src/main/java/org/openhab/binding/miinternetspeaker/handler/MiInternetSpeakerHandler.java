@@ -116,8 +116,6 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         if (deviceUrl.isEmpty()) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                     "Device url is not properly initialized - probably non compatible device");
-        } else {
-            updateStatus(ThingStatus.ONLINE);
         }
     }
 
@@ -248,25 +246,38 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         thread.start();
     }
 
-    private void updatePlayingInfo() {
-        Object[] artists = getArtistItems();
-        Object[] titles = getTitleItems();
+    private void getDeviceStatus() {
         Object[] statuses = getStatusItems();
 
         try {
-            if (statuses.length > 0) {
-                String status = getStatus();
-                if (status == null) {
-                    return;
-                }
-                for (Object channel : statuses) {
-                    State newState = new StringType(status);
-                    updateState(((Channel) channel).getUID(), newState);
+            String status = getStatus();
+            if (status == null) {
+                return;
+            } else {
+                if (!thing.getStatus().equals(ThingStatus.ONLINE)) {
+                    updateStatus(ThingStatus.ONLINE);
                 }
             }
+            for (Object channel : statuses) {
+                State newState = new StringType(status);
+                updateState(((Channel) channel).getUID(), newState);
+            }
+        } catch (Exception ex) {
+            logger.error("GetDeviceStatus error", ex);
+        }
+    }
 
-            if (artists.length > 0 || titles.length > 0 || statuses.length > 0) {
+    private void updatePlayingInfo() {
+        Object[] artists = getArtistItems();
+        Object[] titles = getTitleItems();
+
+        try {
+
+            if (artists.length > 0 || titles.length > 0) {
                 PlayingInfo pi = getPlayingInfo();
+                if (pi == null) {
+                    return;
+                }
                 String artist = "";
                 String title = "";
 
@@ -284,14 +295,8 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
                     updateState(((Channel) channel).getUID(), newState);
                 }
             }
-            if (thing.getStatus().equals(ThingStatus.OFFLINE)) {
-                updateStatus(ThingStatus.ONLINE);
-            }
         } catch (Exception ex) {
-            if (thing.getStatus().equals(ThingStatus.ONLINE)) {
-                logger.error("UpdatePlayingInfo error", ex);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
-            }
+            logger.error("UpdatePlayingInfo error", ex);
         }
     }
 
@@ -340,6 +345,9 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
 
     private PlayingInfo getPlayingInfo() {
         String response = sendAVTransportToSpeaker("GetPositionInfo");
+        if (response == null) {
+            return null;
+        }
         logger.debug(response);
         try {
             DocumentBuilder builder = factory.newDocumentBuilder();
@@ -421,7 +429,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
         } catch (Exception ex) {
             logger.error("SendAVTransportToSpeaker error", ex);
         }
-        return "";
+        return null;
     }
 
     private String sendOffToSpeaker() {
@@ -480,10 +488,11 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             return;
         }
 
-        //update playing info
-        updatePlayingInfo();
+        getDeviceStatus();
 
         if (thing.getStatus().equals(ThingStatus.ONLINE)) {
+            //update playing info
+            updatePlayingInfo();
 
             //update bluetooth value
             items = getBluetoothItems();
@@ -625,13 +634,16 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
     private String getStatus() {
 
         String response = sendAVTransportToSpeaker("GetTransportInfo", "");
+        if (response == null) {
+            return null;
+        }
         try {
             String value = getDataFromXMLValue(response, 0);
             return value;
         } catch (Exception ex) {
             logger.error("GetStatus error", ex);
         }
-        return null;
+        return "";
     }
 
     private String getDataFromXMLValue(String xml, int item) throws Exception {
