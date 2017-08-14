@@ -106,13 +106,11 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
 
             String line = Utils.readResponse(connection);
             JablotronLoginResponse response = gson.fromJson(line, JablotronLoginResponse.class);
-            if (response == null) {
-                logger.error("Login response is not json! {}", line);
+
+            if (!response.isOKStatus()) {
+                logger.error("Invalid response: {}", line);
                 return;
             }
-
-            if (!response.isOKStatus())
-                return;
 
             //get cookie
             session = Utils.getSessionCookie(connection);
@@ -169,12 +167,8 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
             String line = Utils.readResponse(connection);
             JablotronWidgetsResponse response = gson.fromJson(line, JablotronWidgetsResponse.class);
 
-            if (response == null) {
-                logger.error("Widgets response is not json object! {}", line);
-                return;
-            }
-
             if (!response.isOKStatus()) {
+                logger.error("Invalid widgets response: {}", line);
                 return;
             }
 
