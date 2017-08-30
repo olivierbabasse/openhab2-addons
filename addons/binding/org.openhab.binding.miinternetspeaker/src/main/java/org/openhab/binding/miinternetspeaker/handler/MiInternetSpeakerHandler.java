@@ -28,6 +28,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.URL;
@@ -281,10 +282,8 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
                 String artist = "";
                 String title = "";
 
-                if (pi != null) {
-                    artist = pi.getArtist();
-                    title = pi.getTitle();
-                }
+                artist = pi.getArtist();
+                title = pi.getTitle();
 
                 for (Object channel : artists) {
                     State newState = new StringType(artist);
@@ -424,7 +423,7 @@ public class MiInternetSpeakerHandler extends BaseThingHandler {
             sb.append(SOAP_ENVELOPE_END);
 
             return sendMessageToSpeaker(url, sb.toString(), "urn:schemas-upnp-org:service:AVTransport:1#" + command);
-        } catch (NoRouteToHostException ex) {
+        } catch (NoRouteToHostException | ConnectException ex) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Thing is probably offline");
         } catch (Exception ex) {
             logger.error("SendAVTransportToSpeaker error", ex);

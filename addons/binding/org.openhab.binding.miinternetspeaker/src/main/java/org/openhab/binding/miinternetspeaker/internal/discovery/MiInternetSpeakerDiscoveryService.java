@@ -190,7 +190,9 @@ public class MiInternetSpeakerDiscoveryService extends AbstractDiscoveryService 
                             .build());
         } else {
             MiInternetSpeakerHandler handler = (MiInternetSpeakerHandler) thing.getHandler();
-            handler.setModel(device.getManufacturer(), device.getModelName());
+            if( handler != null ) {
+                handler.setModel(device.getManufacturer(), device.getModelName());
+            }
         }
     }
 
