@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2017 by the respective copyright holders.
- * <p>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -30,6 +30,7 @@ import java.io.DataOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.openhab.binding.jablotron.JablotronBindingConstants.*;
@@ -47,6 +48,8 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
     private Gson gson = new Gson();
 
     private String session = "";
+
+    ScheduledFuture<?> future = null;
 
     /**
      * Our configuration
@@ -77,9 +80,18 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         bridgeConfig = getConfigAs(JablotronConfig.class);
         bridgeConfig.setThingUid(thingUid);
 
-        scheduler.scheduleWithFixedDelay(() -> {
+        future = scheduler.scheduleWithFixedDelay(() -> {
             startDiscovery();
         }, 1, bridgeConfig.getRefresh(), TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        logout();
+        if(future != null) {
+            future.cancel(true);
+        }
     }
 
     private void login() {

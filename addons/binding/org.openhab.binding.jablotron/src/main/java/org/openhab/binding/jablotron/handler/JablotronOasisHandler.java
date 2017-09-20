@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2017 by the respective copyright holders.
- * <p>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.openhab.binding.jablotron.JablotronBindingConstants.*;
@@ -61,6 +62,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
     private boolean inService = true;
     private int lastHours = -1;
 
+    ScheduledFuture<?> future = null;
 
     public JablotronOasisHandler(Thing thing) {
         super(thing);
@@ -83,11 +85,20 @@ public class JablotronOasisHandler extends BaseThingHandler {
         }, 0, TimeUnit.SECONDS);
     }
 
+    @Override
+    public void dispose() {
+        super.dispose();
+        logout();
+        if (future != null) {
+            future.cancel(true);
+        }
+    }
+
     private void doInit() {
         login();
         initializeService();
 
-        scheduler.scheduleWithFixedDelay(() -> {
+        future = scheduler.scheduleWithFixedDelay(() -> {
             updateAlarmStatus();
         }, 1, thingConfig.getRefresh(), TimeUnit.SECONDS);
     }
@@ -173,55 +184,68 @@ public class JablotronOasisHandler extends BaseThingHandler {
     }
 
     private synchronized boolean updateAlarmStatus() {
-        logger.debug("updating alarm status...");
+        logger.info("updating alarm status...");
 
-        // relogin every hour
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Date());
-        int hours = cal.get(Calendar.HOUR_OF_DAY);
-        if (lastHours >= 0 && lastHours != hours) {
-            relogin();
-        }
-        lastHours = hours;
-
-        JablotronStatusResponse response = sendGetStatusRequest();
-
-        if (response == null || response.getStatus() != 200) {
-            session = "";
-            controlDisabled = true;
-            inService = false;
-            login();
-            initializeService();
-            response = sendGetStatusRequest();
-        }
-        if (response.isBusyStatus()) {
-            logger.warn("OASIS is busy...giving up");
-            logout();
-            return false;
-        }
-        if (response.hasEvents()) {
-            ArrayList<JablotronEvent> events = response.getEvents();
-            for (JablotronEvent event : events) {
-                logger.debug("Found event: {} {} {}", event.getDatum(), event.getCode(), event.getEvent());
-                updateLastEvent(event.getCode());
+        try {
+            // relogin every hour
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(new Date());
+            int hours = cal.get(Calendar.HOUR_OF_DAY);
+            if (lastHours >= 0 && lastHours != hours) {
+                relogin();
             }
-        }
+            lastHours = hours;
 
-        inService = response.inService();
+            JablotronStatusResponse response = sendGetStatusRequest();
 
-        if (inService) {
-            logger.warn("Alarm is in service mode...");
+            if (response == null || response.getStatus() != 200) {
+                session = "";
+                controlDisabled = true;
+                inService = false;
+                login();
+                initializeService();
+                response = sendGetStatusRequest();
+            }
+            if (response.isBusyStatus()) {
+                logger.warn("OASIS is busy...giving up");
+                logout();
+                return false;
+            }
+            if (response.hasEvents()) {
+                ArrayList<JablotronEvent> events = response.getEvents();
+                for (JablotronEvent event : events) {
+                    logger.debug("Found event: {} {} {}", event.getDatum(), event.getCode(), event.getEvent());
+                    updateLastEvent(event.getCode());
+                }
+            }
+
+            inService = response.inService();
+
+            if (inService) {
+                logger.warn("Alarm is in service mode...");
+                return false;
+            }
+
+            if (response.isOKStatus() && response.hasSectionStatus()) {
+                readAlarmStatusNew(response);
+            } else {
+                logger.error("Cannot get alarm status!");
+                session = "";
+                return false;
+            }
+            for (Channel channel : getThing().getChannels()) {
+                String type = channel.getUID().getId();
+                if (type.equals(CHANNEL_LAST_CHECK_TIME)) {
+                    State status = new DateTimeType(Calendar.getInstance());
+                    updateState(channel.getUID(), status);
+                }
+            }
+
+            return true;
+        } catch (Exception ex) {
+            logger.error("Error during alarm status update", ex);
             return false;
         }
-
-        if (response.isOKStatus() && response.hasSectionStatus()) {
-            readAlarmStatusNew(response);
-        } else {
-            logger.error("Cannot get alarm status!");
-            session = "";
-            return false;
-        }
-        return true;
     }
 
     private void relogin() {
@@ -354,7 +378,6 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
             String line = Utils.readResponse(connection);
             logger.debug("logout... {}", line);
-            updateStatus(ThingStatus.OFFLINE);
         } catch (Exception e) {
             //Silence
             //logger.error(e.toString());
@@ -362,6 +385,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
             controlDisabled = true;
             inService = false;
             session = "";
+            updateStatus(ThingStatus.OFFLINE);
         }
     }
 
@@ -385,6 +409,10 @@ public class JablotronOasisHandler extends BaseThingHandler {
             stavPGY = 0;
 
             JablotronBridgeHandler bridge = (JablotronBridgeHandler) this.getBridge().getHandler();
+            if (bridge == null) {
+                logger.error("Bridge handler is null!");
+                return;
+            }
             url = JABLOTRON_URL + "ajax/login.php";
             String urlParameters = "login=" + bridge.bridgeConfig.getLogin() + "&heslo=" + bridge.bridgeConfig.getPassword() + "&aStatus=200&loginType=Login";
             byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
@@ -405,10 +433,6 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
             String line = Utils.readResponse(connection);
             JablotronLoginResponse response = gson.fromJson(line, JablotronLoginResponse.class);
-            if (response == null) {
-                logger.error("Login response is not json! {}", line);
-                return;
-            }
 
             if (!response.isOKStatus())
                 return;

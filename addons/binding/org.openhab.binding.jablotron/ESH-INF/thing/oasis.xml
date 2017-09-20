@@ -21,6 +21,7 @@
 			<channel id="command" typeId="command"/>
 			<channel id="lastEvent" typeId="lastEvent"/>
 			<channel id="lastEventTime" typeId="lastEventTime"/>
+			<channel id="lastCheckTime" typeId="lastCheckTime"/>
 			<channel id="alarm" typeId="alarm"/>
 		</channels>
 		<config-description-ref uri="thing-type:jablotron:device"/>
@@ -87,5 +88,12 @@
 		<item-type>DateTime</item-type>
 		<label>OASIS Last Event Time Channel</label>
 		<description>Date and time of last event of your OASIS alarm</description>
+	</channel-type>
+
+	<!-- LastCheckTime -->
+	<channel-type id="lastCheckTime">
+		<item-type>DateTime</item-type>
+		<label>OASIS Last Check Time Channel</label>
+		<description>Date and time of last status check of your OASIS alarm</description>
 	</channel-type>
 </thing:thing-descriptions>
