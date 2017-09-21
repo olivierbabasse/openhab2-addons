@@ -184,7 +184,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
     }
 
     private synchronized boolean updateAlarmStatus() {
-        logger.info("updating alarm status...");
+        logger.debug("updating alarm status...");
 
         try {
             // relogin every hour
