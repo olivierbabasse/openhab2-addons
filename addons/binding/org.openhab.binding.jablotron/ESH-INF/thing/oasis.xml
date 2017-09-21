@@ -32,6 +32,7 @@
 		<item-type>Switch</item-type>
 		<label>OASIS Zone A Status Channel</label>
 		<description>Status of the A zone of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- StatusB -->
@@ -39,6 +40,7 @@
 		<item-type>Switch</item-type>
 		<label>OASIS Zone B Status Channel</label>
 		<description>Status of the B zone of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- StatusABC -->
@@ -46,6 +48,7 @@
 		<item-type>Switch</item-type>
 		<label>OASIS Zone ABC Status Channel</label>
 		<description>Status of the ABC zone of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- StatusPGX -->
@@ -53,6 +56,7 @@
 		<item-type>Switch</item-type>
 		<label>OASIS PGx Status Channel</label>
 		<description>Status of the PGX switch of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- StatusPGY -->
@@ -60,6 +64,7 @@
 		<item-type>Switch</item-type>
 		<label>OASIS PGY Status Channel</label>
 		<description>Status of the PGY switch of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- Alarm -->
@@ -67,6 +72,7 @@
 		<item-type>Switch</item-type>
 		<label>OASIS Alarm Channel</label>
 		<description>Status of the alarm of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- Command -->
@@ -74,6 +80,7 @@
 		<item-type>Text</item-type>
 		<label>OASIS Command Channel</label>
 		<description>Channel for sending commands to your OASIS alarm</description>
+		<state readOnly="false"/>
 	</channel-type>
 
 	<!-- LastEvent -->
@@ -81,6 +88,7 @@
 		<item-type>Text</item-type>
 		<label>OASIS Last Event Code Channel</label>
 		<description>Code of last event of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- LastEventTime -->
@@ -88,6 +96,7 @@
 		<item-type>DateTime</item-type>
 		<label>OASIS Last Event Time Channel</label>
 		<description>Date and time of last event of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<!-- LastCheckTime -->
@@ -95,5 +104,6 @@
 		<item-type>DateTime</item-type>
 		<label>OASIS Last Check Time Channel</label>
 		<description>Date and time of last status check of your OASIS alarm</description>
+		<state readOnly="true"/>
 	</channel-type>
 </thing:thing-descriptions>
