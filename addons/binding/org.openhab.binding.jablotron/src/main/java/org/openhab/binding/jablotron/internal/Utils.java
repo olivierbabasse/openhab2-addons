@@ -29,17 +29,19 @@ public class Utils {
     }
 
     public static String readResponse(HttpsURLConnection connection) throws Exception {
-        InputStream stream = connection.getInputStream();
-        String line;
-        StringBuilder body = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        synchronized(Utils.class) {
+            InputStream stream = connection.getInputStream();
+            String line;
+            StringBuilder body = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
 
-        while ((line = reader.readLine()) != null) {
-            body.append(line).append("\n");
+            while ((line = reader.readLine()) != null) {
+                body.append(line).append("\n");
+            }
+            line = body.toString();
+            //logger.debug(line);
+            return line;
         }
-        line = body.toString();
-        //logger.debug(line);
-        return line;
     }
 
     public static String getBrowserTimestamp() {

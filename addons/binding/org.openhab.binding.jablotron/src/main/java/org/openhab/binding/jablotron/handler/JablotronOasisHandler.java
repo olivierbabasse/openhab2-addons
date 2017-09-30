@@ -395,6 +395,8 @@ public class JablotronOasisHandler extends BaseThingHandler {
         connection.setRequestProperty("Accept-Language", "cs-CZ");
         connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
         connection.setUseCaches(false);
+        connection.setReadTimeout(30 * 1000);
+        connection.setConnectTimeout(5 * 1000);
     }
 
     private synchronized void login() {
