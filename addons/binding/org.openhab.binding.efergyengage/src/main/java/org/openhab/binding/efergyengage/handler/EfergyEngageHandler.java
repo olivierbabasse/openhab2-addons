@@ -200,8 +200,14 @@ public class EfergyEngageHandler extends BaseThingHandler {
             return;
         }
 
-        for (Channel channel : getThing().getChannels()) {
-            updateChannel(channel.getUID());
+        try {
+            for (Channel channel : getThing().getChannels()) {
+                updateChannel(channel.getUID());
+            }
+        }
+        catch(Exception ex) {
+            logger.error("Error during updating channels", ex);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
     }
 
