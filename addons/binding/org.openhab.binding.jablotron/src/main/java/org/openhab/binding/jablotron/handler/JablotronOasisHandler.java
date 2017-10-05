@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2017 by the respective copyright holders.
- *
+ * <p>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -266,7 +266,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
     public synchronized void sendCommand(String code, String serviceUrl) {
         int status = 0;
-        int result = 0;
+        Integer result = 0;
         try {
             if (!getThing().getStatus().equals(ThingStatus.ONLINE)) {
                 login();
@@ -276,10 +276,18 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 logger.error("Cannot send user code due to alarm status!");
                 return;
             }
-            while (controlDisabled) {
-                logger.debug("Waiting for control enabling...");
+            int timeout = 30;
+            while (controlDisabled && --timeout >= 0) {
+                logger.info("Waiting for control enabling...");
                 Thread.sleep(1000);
-                updateAlarmStatus();
+                boolean ok = updateAlarmStatus();
+                if (!ok) {
+                    return;
+                }
+            }
+            if( timeout < 0 ) {
+                logger.warn("Timeout during waiting for control enabling");
+                return;
             }
 
             JablotronControlResponse response = sendUserCode("", serviceUrl);
@@ -289,14 +297,23 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
             status = response.getStatus();
             result = response.getVysledek();
-            if (status == 200 && result == 4) {
-                logger.debug("Sending user code: {}", code);
-                response = sendUserCode(code, serviceUrl);
+            if (result != null) {
+                if (status == 200 && result == 4) {
+                    logger.debug("Sending user code: {}", code);
+                    response = sendUserCode(code, serviceUrl);
+                } else {
+                    logger.warn("Received unknown status: {}", status);
+                }
+                if (response.getVysledek() != null) {
+                    handleHttpRequestStatus(response.getStatus());
+                } else {
+                    logger.warn("null status received");
+                    logout();
+                }
             } else {
-                logger.warn("Received unknown status: {}", status);
+                logger.warn("null status received");
+                logout();
             }
-            //handleJablotronResult(response);
-            handleHttpRequestStatus(response.getStatus());
         } catch (Exception e) {
             logger.error("internalReceiveCommand exception", e);
         }

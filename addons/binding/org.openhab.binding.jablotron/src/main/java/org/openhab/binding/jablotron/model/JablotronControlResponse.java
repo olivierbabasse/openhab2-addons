@@ -9,10 +9,10 @@
 package org.openhab.binding.jablotron.model;
 
 public class JablotronControlResponse {
-    private int vysledek;
+    private Integer vysledek;
     private int status;
 
-    public int getVysledek() {
+    public Integer getVysledek() {
         return vysledek;
     }
 
