@@ -292,6 +292,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
             JablotronControlResponse response = sendUserCode("", serviceUrl);
             if (response == null) {
+                logger.warn("null response received");
                 return;
             }
 
@@ -304,10 +305,10 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 } else {
                     logger.warn("Received unknown status: {}", status);
                 }
-                if (response.getVysledek() != null) {
+                if (response != null && response.getVysledek() != null) {
                     handleHttpRequestStatus(response.getStatus());
                 } else {
-                    logger.warn("null status received");
+                    logger.warn("null response/status received");
                     logout();
                 }
             } else {
@@ -412,8 +413,8 @@ public class JablotronOasisHandler extends BaseThingHandler {
         connection.setRequestProperty("Accept-Language", "cs-CZ");
         connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
         connection.setUseCaches(false);
-        connection.setReadTimeout(30 * 1000);
-        connection.setConnectTimeout(5 * 1000);
+        //connection.setReadTimeout(30 * 1000);
+        //connection.setConnectTimeout(5 * 1000);
     }
 
     private synchronized void login() {
