@@ -13,11 +13,13 @@ Currently supports these things
 - screens (UP, DOWN, STOP control of a screen). IO Homecontrol devices are allowed to set exact position of a screen (0-100%)
 - garage doors (UP, DOWN, STOP control of a garage door). IO Homecontrol devices are allowed to set exact position of a garage door (0-100%)
 - awnings (UP, DOWN, STOP control of an awning). IO Homecontrol devices are allowed to set exact position of an awning (0-100%)
+- windows (UP, DOWN, STOP control of a window). IO Homecontrol devices are allowed to set exact position of a window (0-100%)
 - on/off switches (connected by RTS, IO protocol or supported by USB stick - z-wave, enocean, ..)
 - light switches (similar to on/off)
 - light sensors (luminance value)
 - occupancy sensors (OPEN/CLOSE contact)
 - smoke sensors (OPEN/CLOSE contact)
+- contact sensors (OPEN/CLOSE contact)
 - action groups (scenarios which can execute predefined Tahoma group of steps, e.g. send to all roller shutters DOWN command, one by one)
 
 Both Somfy Tahoma and Somfy Connexoon gateways have been confirmed working.
@@ -49,7 +51,7 @@ Gateways expose this read only channel:
 
 - version (this is a firmware version of your Tahoma gateway)
 
-Roller shutters, exterior screens, garage doors and awnings expose these channels:
+Roller shutters, screens, blinds, garage doors, awnings & windows expose these channels:
 
 - position (a percentual position of the device, it can have value 0-100). For IO Homecontrol devices only (non RTS)!
 - control (a device controller which reacts to commands UP/DOWN/STOP)
@@ -67,15 +69,15 @@ An action group thing has this channel:
 
 - trigger (a switch which reacts to ON command and triggers the predefined Tahoma action)
 
-An on/off and light thing has this channel:
+An on/off and light things have this channel:
 
 - switch (reacts to standard ON/OFF commands)
 
-A smoke sensor and occupancy sensor has this channel:
+A smoke sensor, occupancy sensor and contact sensor things have this channel:
 
 - contact (normal value is CLOSE, changes to OPEN when detection triggered)
 
-A light sensors exposes this channel:
+A light sensors thing exposes this channel:
 
 - luminance (light luminance value in luxes) 
 
@@ -101,7 +103,7 @@ Bridge somfytahoma:bridge:237dbae7 "Somfy Tahoma Bridge" [ email="my@email.com",
 }
 ```
 
-Awnings, garage doors and exterior screens have the same notation as roller shutters. Just use "awning", "garagedoor" or "exteriorscreen" instead of "rolleshutter" in thing definition. 
+Awnings, garage doors, screens, blinds, and windows things have the same notation as roller shutters. Just use "awning", "garagedoor", "screen", "blind" or "window" instead of "rolleshutter" in thing definition. 
 
 .items file
 
@@ -129,6 +131,7 @@ Number LightSensor "Light Sensor [%.1f lux]" { channel="somfytahoma:lightsensor:
 
 Contact OccupancySensor "Occupancy Sensor is [%s]" { channel="somfytahoma:occupancysensor:237dbae7:995e16ca-07c4-4111-9cda-504cb5120f82:contact" }
 Contact SmokeSensor "Smoke Sensor is [%s]" { channel="somfytahoma:smokesensor:237dbae7:9438e6ff-c17e-40d7-a4b4-3e797eca5bf7:contact" }
+Contact ContactSensor "Contact Sensor is [%s]" { channel="somfytahoma:contactsensor:237dbae7:6612f2e3-d23d-21dd-b3a6-13ef7abcd134:contact" }
 ```
 
 ## Alexa compatibility

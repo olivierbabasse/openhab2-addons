@@ -20,17 +20,16 @@ import java.util.Hashtable;
 import static org.openhab.binding.somfytahoma.SomfyTahomaBindingConstants.*;
 
 /**
- * The {@link SomfyTahomaRollerShutterHandler} is responsible for handling commands,
- * which are sent to one of the channels of the roller shutter, screen & garage door
- * things.
+ * The {@link SomfyTahomaSilentRollerShutterHandler} is responsible for handling commands,
+ * which are sent to one of the channels of the silent roller shutter thing.
  *
  * @author Ondrej Pecta - Initial contribution
  */
-public class SomfyTahomaRollerShutterHandler extends SomfyTahomaBaseThingHandler {
+public class SomfyTahomaSilentRollerShutterHandler extends SomfyTahomaBaseThingHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(SomfyTahomaRollerShutterHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(SomfyTahomaSilentRollerShutterHandler.class);
 
-    public SomfyTahomaRollerShutterHandler(Thing thing) {
+    public SomfyTahomaSilentRollerShutterHandler(Thing thing) {
         super(thing);
     }
 
@@ -38,6 +37,7 @@ public class SomfyTahomaRollerShutterHandler extends SomfyTahomaBaseThingHandler
     public Hashtable<String, String> getStateNames() {
         return new Hashtable<String, String>() {{
             put(POSITION, "core:ClosureState");
+            put(POSITION_SILENT, "core:ClosureState");
             put(CONTROL, "core:ClosureState");
         }};
     }
@@ -45,7 +45,7 @@ public class SomfyTahomaRollerShutterHandler extends SomfyTahomaBaseThingHandler
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("Received command {} for channel {}", command, channelUID);
-        if (!channelUID.getId().equals(POSITION) && !channelUID.getId().equals(CONTROL)) {
+        if (!channelUID.getId().equals(POSITION) && !channelUID.getId().equals(CONTROL) && !channelUID.getId().equals(POSITION_SILENT)) {
             return;
         }
 
@@ -56,18 +56,25 @@ public class SomfyTahomaRollerShutterHandler extends SomfyTahomaBaseThingHandler
                 getBridgeHandler().updateChannelState(this, channelUID, url);
             }
         } else {
-            String cmd = getTahomaCommand(command.toString());
-            //Check if the rollershutter is not moving
-            String executionId = getBridgeHandler().getCurrentExecutions(url);
-            if (executionId != null) {
-                //STOP command should be interpreted if rollershutter is moving
-                //otherwise do nothing
-                if (cmd.equals(COMMAND_MY)) {
-                    getBridgeHandler().cancelExecution(executionId);
+            if (channelUID.getId().equals(POSITION) || channelUID.getId().equals(CONTROL)) {
+                String cmd = getTahomaCommand(command.toString());
+                //Check if the rollershutter is not moving
+                String executionId = getBridgeHandler().getCurrentExecutions(url);
+                if (executionId != null) {
+                    //STOP command should be interpreted if rollershutter is moving
+                    //otherwise do nothing
+                    if (cmd.equals(COMMAND_MY)) {
+                        getBridgeHandler().cancelExecution(executionId);
+                    }
+                } else {
+                    String param = cmd.equals(COMMAND_SET_CLOSURE) ? "[" + command.toString() + "]" : "[]";
+                    getBridgeHandler().sendCommand(url, cmd, param);
                 }
             } else {
-                String param = cmd.equals(COMMAND_SET_CLOSURE) ? "[" + command.toString() + "]" : "[]";
-                getBridgeHandler().sendCommand(url, cmd, param);
+                // POSITION_SILENT
+                String param = "[" + command.toString() + ", \"lowspeed\"]";
+                getBridgeHandler().sendCommand(url, COMMAND_SET_CLOSURESPEED, param);
+
             }
         }
     }

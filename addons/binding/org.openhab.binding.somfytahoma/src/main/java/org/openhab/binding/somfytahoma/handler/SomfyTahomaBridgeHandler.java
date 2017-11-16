@@ -196,6 +196,14 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
 
     private void listActionGroups() {
         String groups = getGroups();
+        if (StringUtils.equals(groups, UNAUTHORIZED)) {
+            login();
+            groups = getGroups();
+        }
+
+        if (groups == null || groups.equals(UNAUTHORIZED)) {
+            return;
+        }
 
         SomfyTahomaActionGroupResponse data = gson.fromJson(groups, SomfyTahomaActionGroupResponse.class);
         for (SomfyTahomaActionGroup group : data.getActionGroups()) {
@@ -223,16 +231,25 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         } catch (IOException e) {
             if (e.toString().contains(UNAUTHORIZED)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
+                return UNAUTHORIZED;
             }
             logger.error("Cannot send getActionGroups command!", e);
         } catch (Exception e) {
             logger.error("Cannot send getActionGroups command!", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
-        return "";
+        return null;
     }
 
     private void listDevices() {
+        Boolean result = listDevicesInternal();
+        if (result != null && !result) {
+            login();
+            listDevicesInternal();
+        }
+    }
+
+    private Boolean listDevicesInternal() {
         String url = null;
 
         try {
@@ -251,31 +268,33 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             for (SomfyTahomaGateway gateway : setup.getGateways()) {
                 discoveryService.gatewayDiscovered(gateway.getGatewayId());
             }
+            return true;
         } catch (MalformedURLException e) {
             logger.error("The URL '{}' is malformed!", url, e);
         } catch (IOException e) {
             if (e.toString().contains(UNAUTHORIZED)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
+                return false;
             }
             logger.error("Cannot send listDevices command!", e);
         } catch (Exception e) {
             logger.error("Cannot send listDevices command!", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
-
+        return null;
     }
 
     public void setDiscoveryService(SomfyTahomaItemDiscoveryService somfyTahomaItemDiscoveryService) {
         this.discoveryService = somfyTahomaItemDiscoveryService;
     }
 
-    private List<SomfyTahomaState> getStates(SomfyTahomaThingHandler handler, String deviceUrl) {
+    private List<SomfyTahomaState> getAllStates(SomfyTahomaThingHandler handler, String deviceUrl) {
         String url = null;
 
-        logger.debug("Getting state for a device: {}", deviceUrl);
+        logger.debug("Getting states for a device: {}", deviceUrl);
         try {
             url = TAHOMA_URL + "getStates";
-            String urlParameters = "[{\"deviceURL\": \"" + deviceUrl + "\", \"states\": [" + gerFormattedParameters(handler.getStateNames().values()) + "]}]";
+            String urlParameters = "[{\"deviceURL\": \"" + deviceUrl + "\", \"states\": [" + getFormattedParameters(handler.getStateNames().values()) + "]}]";
 
             InputStream response = sendDataToTahomaWithCookie(url, urlParameters);
             String line = readResponse(response);
@@ -301,21 +320,16 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         return null;
     }
 
-    private String gerFormattedParameters(Collection<String> stateNames) {
+    private String getFormattedParameters(Collection<String> stateNames) {
         ArrayList<String> uniqueNames = new ArrayList<>();
-        for(String name: stateNames) {
-            if(!uniqueNames.contains(name)) {
+        for (String name : stateNames) {
+            if (!uniqueNames.contains(name)) {
                 uniqueNames.add(name);
             }
         }
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
+        StringBuilder sb = new StringBuilder("{\"name\": \"" + STATUS_STATE + "\"}");
         for (String name : uniqueNames) {
-            if (!first) {
-                sb.append(',');
-            } else {
-                first = false;
-            }
+            sb.append(',');
             sb.append("{\"name\": \"").append(name).append("\"}");
         }
         logger.debug("Formatted parameters: {}", sb.toString());
@@ -337,18 +351,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             SomfyTahomaDeviceWithState device = data.getDevices().get(0);
             if (device.hasStates()) {
                 SomfyTahomaState state = device.getStates().get(0);
-                if (state.getType() == TYPE_PERCENT) {
-                    Double value = (Double) state.getValue();
-                    return new PercentType(value.intValue());
-                }
-                if (state.getType() == TYPE_DECIMAL) {
-                    Double value = (Double) state.getValue();
-                    return new DecimalType(value);
-                }
-                if (state.getType() == TYPE_STRING) {
-                    String value = state.getValue().toString().toLowerCase();
-                    return parseStringState(value.toLowerCase());
-                }
+                return parseTahomaState(state);
             } else {
                 logger.debug("Device: {} has not returned any state", deviceUrl);
                 return UnDefType.UNDEF;
@@ -360,6 +363,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
                 return UnDefType.NULL;
             }
+            logger.error("Cannot send getStates command!", e);
         } catch (Exception e) {
             logger.error("Cannot send getStates command!", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
@@ -367,17 +371,35 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         return null;
     }
 
+    private State parseTahomaState(SomfyTahomaState state) {
+        switch (state.getType()) {
+            case TYPE_PERCENT:
+                Double valPct = (Double) state.getValue();
+                return new PercentType(valPct.intValue());
+            case TYPE_DECIMAL:
+                Double valDec = (Double) state.getValue();
+                return new DecimalType(valDec);
+            case TYPE_STRING:
+                String value = state.getValue().toString().toLowerCase();
+                return parseStringState(value.toLowerCase());
+            default:
+                return null;
+        }
+    }
+
     private State parseStringState(String value) {
-        switch(value) {
+        switch (value) {
             case "on":
                 return OnOffType.ON;
             case "off":
                 return OnOffType.OFF;
             case "notdetected":
             case "nopersoninside":
+            case "closed":
                 return OpenClosedType.CLOSED;
             case "detected":
             case "personinside":
+            case "open":
                 return OpenClosedType.OPEN;
             default:
                 logger.warn("Unknown thing state returned: {}", value);
@@ -387,7 +409,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
 
     private void updateTahomaStates() {
         logger.debug("Updating Tahoma States...");
-        if(thing.getStatus().equals(ThingStatus.OFFLINE)) {
+        if (thing.getStatus().equals(ThingStatus.OFFLINE)) {
             login();
         }
 
@@ -404,52 +426,57 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
     }
 
     public void updateThingState(Thing thing, String url) {
-        SomfyTahomaThingHandler handler = (SomfyTahomaThingHandler) thing.getHandler();
+        SomfyTahomaBaseThingHandler handler = (SomfyTahomaBaseThingHandler) thing.getHandler();
         if (handler != null && handler.getStateNames() != null) {
-            List<SomfyTahomaState> state = getStates(handler, url);
-            if (state == null) {
+            List<SomfyTahomaState> states = getAllStates(handler, url);
+            if (states == null) {
                 //relogin
                 login();
-                state = getStates(handler, url);
+                states = getAllStates(handler, url);
             }
 
-            if (state == null) {
+            if (states == null) {
                 return;
             }
 
+            // update thing status
+            updateThingStatus(handler, states);
+
+            // update channel values
             for (Channel channel : thing.getChannels()) {
-                State channelState = getChannelState(handler, channel, state);
-                if( channelState != null ) {
+                State channelState = getChannelState(handler, channel, states);
+                if (channelState != null) {
                     updateState(channel.getUID(), channelState);
                 } else {
-                    logger.warn("Cannot get state for channel {}", channel.getUID());
+                    logger.debug("Cannot find state for channel {}", channel.getUID());
                 }
             }
         }
+    }
 
+    private void updateThingStatus(SomfyTahomaBaseThingHandler handler, List<SomfyTahomaState> states) {
+        for (SomfyTahomaState state : states) {
+            if (state.getName().equals(STATUS_STATE) && state.getType() == TYPE_STRING) {
+                if (state.getValue().equals(UNAVAILABLE)) {
+                    handler.setUnavailable();
+                } else {
+                    handler.setAvailable();
+                }
+                return;
+            }
+        }
     }
 
     private State getChannelState(SomfyTahomaThingHandler handler, Channel channel, List<SomfyTahomaState> channelStates) {
         ChannelTypeUID channelUID = channel.getChannelTypeUID();
-        if(channelUID == null) {
+        if (channelUID == null) {
             return null;
         }
 
         String stateName = handler.getStateNames().get(channelUID.getId());
-        for( SomfyTahomaState state : channelStates ) {
-            if( state.getName().equals(stateName)) {
-                if (state.getType() == TYPE_PERCENT) {
-                    Double value = (Double) state.getValue();
-                    return new PercentType(value.intValue());
-                }
-                if (state.getType() == TYPE_DECIMAL) {
-                    Double value = (Double) state.getValue();
-                    return new DecimalType(value);
-                }
-                if (state.getType() == TYPE_STRING) {
-                    String value = state.getValue().toString().toLowerCase();
-                    return value.equals("on") ? OnOffType.ON : OnOffType.OFF;
-                }
+        for (SomfyTahomaState state : channelStates) {
+            if (state.getName().equals(stateName)) {
+                return parseTahomaState(state);
             }
         }
         return null;
@@ -544,6 +571,14 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
     }
 
     public void sendCommand(String io, String command, String params) {
+        Boolean result = sendCommandInternal(io, command, params);
+        if (result != null && !result) {
+            login();
+            sendCommandInternal(io, command, params);
+        }
+    }
+
+    private Boolean sendCommandInternal(String io, String command, String params) {
         String url = null;
 
         try {
@@ -560,23 +595,35 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             if (!StringUtils.isEmpty(data.getExecId())) {
                 logger.debug("Exec id: {}", data.getExecId());
             } else {
-                logger.warn("Command response: {}", line);
+                logger.warn("Apply command response: {}", line);
                 throw new SomfyTahomaException(line);
             }
+            return true;
         } catch (MalformedURLException e) {
             logger.error("The URL '{}' is malformed!", url, e);
         } catch (IOException e) {
             if (e.toString().contains(UNAUTHORIZED)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
+                return false;
             }
             logger.error("Cannot send apply command {} with params {}!", command, params, e);
         } catch (Exception e) {
             logger.error("Cannot send apply command {} with params {}!", command, params, e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
+        return null;
     }
 
     public String getCurrentExecutions(String type) {
+        String execId = getCurrentExecutionsInternal(type);
+        if (StringUtils.equals(execId, UNAUTHORIZED)) {
+            login();
+            execId = getCurrentExecutionsInternal(type);
+        }
+        return StringUtils.equals(execId, UNAUTHORIZED) ? null : execId;
+    }
+
+    private String getCurrentExecutionsInternal(String type) {
         String url = null;
 
         try {
@@ -602,38 +649,56 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         } catch (IOException e) {
             if (e.toString().contains(UNAUTHORIZED)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
+                return UNAUTHORIZED;
             }
             logger.error("Cannot send getCurrentExecutions command!", e);
         } catch (Exception e) {
             logger.error("Cannot send getCurrentExecutions command!", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
-
         return null;
     }
 
     public void cancelExecution(String executionId) {
+        Boolean result = cancelExecutionInternal(executionId);
+        if (result != null && !result) {
+            login();
+            cancelExecutionInternal(executionId);
+        }
+    }
+
+    private Boolean cancelExecutionInternal(String executionId) {
         String url = null;
 
         try {
             url = DELETE_URL + executionId;
             sendDeleteToTahomaWithCookie(url);
-
+            return true;
         } catch (MalformedURLException e) {
             logger.error("The URL '{}' is malformed!", e);
         } catch (IOException e) {
             if (e.toString().contains(UNAUTHORIZED)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
+                return false;
             }
             logger.error("Cannot cancel execution!", e);
         } catch (Exception e) {
             logger.error("Cannot cancel execution!", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
+        return null;
     }
 
     public ArrayList<SomfyTahomaAction> getTahomaActions(String actionGroup) {
         String groups = getGroups();
+        if (StringUtils.equals(groups, UNAUTHORIZED)) {
+            login();
+            groups = getGroups();
+        }
+
+        if (groups == null || groups.equals(UNAUTHORIZED)) {
+            return new ArrayList<>();
+        }
 
         SomfyTahomaActionGroupResponse data = gson.fromJson(groups, SomfyTahomaActionGroupResponse.class);
         for (SomfyTahomaActionGroup group : data.getActionGroups()) {
@@ -650,6 +715,15 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             return;
         }
         String version = getTahomaVersion(id);
+        if (StringUtils.equals(version, UNAUTHORIZED)) {
+            login();
+            version = getTahomaVersion(id);
+        }
+
+        if (version == null || version.equals(UNAUTHORIZED)) {
+            return;
+        }
+
         for (Channel channel : thing.getChannels()) {
             if (channel.getUID().getId().equals(VERSION)) {
                 logger.debug("Updating version channel");
@@ -668,9 +742,15 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             logger.debug("Tahoma version: {}", data.getResult());
 
             return data.getResult();
+        } catch (IOException e) {
+            if (e.toString().contains(UNAUTHORIZED)) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
+                return UNAUTHORIZED;
+            }
+            logger.error("Cannot get Tahoma gateway version!", e);
         } catch (Exception e) {
             logger.error("Cannot get Tahoma gateway version!", e);
         }
-        return "";
+        return null;
     }
 }
