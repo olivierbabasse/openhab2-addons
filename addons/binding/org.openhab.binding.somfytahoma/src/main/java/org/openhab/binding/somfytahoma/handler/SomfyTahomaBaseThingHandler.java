@@ -46,4 +46,8 @@ public abstract class SomfyTahomaBaseThingHandler extends BaseThingHandler imple
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, UNAVAILABLE);
         }
     }
+
+    protected String getURL() {
+        return getThing().getConfiguration().get("url").toString();
+    }
 }

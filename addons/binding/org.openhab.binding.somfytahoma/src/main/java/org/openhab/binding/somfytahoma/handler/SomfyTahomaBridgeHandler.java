@@ -10,6 +10,7 @@ package org.openhab.binding.somfytahoma.handler;
 
 import com.google.gson.Gson;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.smarthome.config.core.status.ConfigStatusMessage;
 import org.eclipse.smarthome.core.library.types.*;
 import org.eclipse.smarthome.core.thing.*;
@@ -66,7 +67,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
 
     private SomfyTahomaItemDiscoveryService discoveryService = null;
 
-    public SomfyTahomaBridgeHandler(Bridge thing) {
+    public SomfyTahomaBridgeHandler(@NonNull Bridge thing) {
         super(thing);
     }
 
