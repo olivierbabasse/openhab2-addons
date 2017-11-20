@@ -6,23 +6,23 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.efergyengage.model;
+package org.openhab.binding.efergyengage.internal.model;
 
 /**
  * The {@link EfergyEngageGetInstantResponse} represents the model of
- * the response of getting instant power consumption.
+ * the montly money spending estimation based on consumption this month.
  *
  * @author Ondrej Pecta - Initial contribution
  */
-public class EfergyEngageGetInstantResponse {
-    int reading;
-    long last_reading_time;
+public class EfergyEngageEstimate {
+    float estimate;
+    float previousSum;
 
-    public int getReading() {
-        return reading;
+    public float getEstimate() {
+        return estimate;
     }
 
-    public long getLastReadingTime() {
-        return last_reading_time;
+    public float getPreviousSum() {
+        return previousSum;
     }
 }

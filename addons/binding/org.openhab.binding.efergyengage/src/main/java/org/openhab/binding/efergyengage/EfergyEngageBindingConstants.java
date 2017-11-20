@@ -35,6 +35,10 @@ public class EfergyEngageBindingConstants {
 
     // other constants
     public final static String EFERGY_URL = "https://engage.efergy.com";
+    public final static String DAY = "day";
+    public final static String WEEK = "week";
+    public final static String MONTH = "month";
+    public final static String YEAR = "year";
 
 
 }

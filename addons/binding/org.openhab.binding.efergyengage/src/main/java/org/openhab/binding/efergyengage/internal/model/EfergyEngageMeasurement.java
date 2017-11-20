@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.efergyengage.model;
+package org.openhab.binding.efergyengage.internal.model;
 
 /**
  * The {@link EfergyEngageMeasurement} represents the result value of

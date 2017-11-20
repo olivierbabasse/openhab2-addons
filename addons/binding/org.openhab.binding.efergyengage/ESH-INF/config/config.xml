@@ -4,7 +4,7 @@
 	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/config-description/v1.0.0
         http://eclipse.org/smarthome/schemas/config-description-1.0.0.xsd">
 
-	<config-description uri="thing-type:miio:hub">
+	<config-description uri="thing-type:hub:config">
 		<parameter name="email" type="text" required="true">
 			<label>User Name</label>
 			<description>The email to use when connecting to an Efergy Engage account</description>
