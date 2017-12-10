@@ -193,6 +193,8 @@ public class JablotronOasisHandler extends BaseThingHandler {
             int hours = cal.get(Calendar.HOUR_OF_DAY);
             if (lastHours >= 0 && lastHours != hours) {
                 relogin();
+            } else {
+                initializeService(false);
             }
             lastHours = hours;
 
@@ -249,10 +251,10 @@ public class JablotronOasisHandler extends BaseThingHandler {
     }
 
     private void relogin() {
-        logger.info("Doing relogin");
+        logger.debug("Doing relogin");
         logout();
         login();
-        initializeService();
+        initializeService(false);
     }
 
     private void updateLastEvent(String code) {
@@ -336,12 +338,8 @@ public class JablotronOasisHandler extends BaseThingHandler {
                 initializeService();
                 break;
             case 200:
-                scheduler.schedule(() -> {
-                    updateAlarmStatus();
-                }, 0, TimeUnit.SECONDS);
-                scheduler.schedule(() -> {
-                    updateAlarmStatus();
-                }, 10, TimeUnit.SECONDS);
+                scheduler.schedule((Runnable) this::updateAlarmStatus, 0, TimeUnit.SECONDS);
+                scheduler.schedule((Runnable) this::updateAlarmStatus, 10, TimeUnit.SECONDS);
                 break;
             default:
                 logger.error("Unknown status code received: {}", status);
@@ -476,6 +474,10 @@ public class JablotronOasisHandler extends BaseThingHandler {
     }
 
     private void initializeService() {
+        initializeService(true);
+    }
+
+    private void initializeService(boolean verbose) {
         String url = thingConfig.getUrl();
         String serviceId = thingConfig.getServiceId();
         try {
@@ -488,8 +490,13 @@ public class JablotronOasisHandler extends BaseThingHandler {
             setConnectionDefaults(connection);
 
             if (connection.getResponseCode() == 200) {
-                logger.info("Jablotron OASIS service: {} successfully initialized", serviceId);
+                if(verbose) {
+                    logger.info("Jablotron OASIS service: {} successfully initialized", serviceId);
+                } else {
+                    logger.debug("Jablotron OASIS service: {} successfully initialized", serviceId);
+                }
                 updateStatus(ThingStatus.ONLINE);
+
             } else {
                 logger.error("Cannot initialize Jablotron service: {}", serviceId);
                 logger.error("Got response code: {}", connection.getResponseCode());

@@ -80,9 +80,7 @@ public class JablotronBridgeHandler extends BaseThingHandler implements BridgeHa
         bridgeConfig = getConfigAs(JablotronConfig.class);
         bridgeConfig.setThingUid(thingUid);
 
-        future = scheduler.scheduleWithFixedDelay(() -> {
-            startDiscovery();
-        }, 1, bridgeConfig.getRefresh(), TimeUnit.SECONDS);
+        future = scheduler.schedule(this::startDiscovery, 1, TimeUnit.SECONDS);
     }
 
     @Override

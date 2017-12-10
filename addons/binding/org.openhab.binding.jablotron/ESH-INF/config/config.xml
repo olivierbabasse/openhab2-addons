@@ -37,11 +37,5 @@
                 <description>Password for Jablonet portal</description>
                 <required>true</required>
             </parameter>
-
-        <parameter name="refresh" type="integer" required="false">
-            <label>Refresh refresh</label>
-            <description>Specifies the refresh of thing states in seconds</description>
-            <default>300</default>
-        </parameter>
     </config-description>
 </config-description:config-descriptions>
