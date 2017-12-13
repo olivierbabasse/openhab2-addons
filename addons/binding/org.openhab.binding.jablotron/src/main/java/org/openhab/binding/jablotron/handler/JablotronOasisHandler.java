@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2017 by the respective copyright holders.
- * <p>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -252,7 +252,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
 
     private void relogin() {
         logger.debug("Doing relogin");
-        logout();
+        logout(false);
         login();
         initializeService(false);
     }
@@ -287,7 +287,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
                     return;
                 }
             }
-            if( timeout < 0 ) {
+            if (timeout < 0) {
                 logger.warn("Timeout during waiting for control enabling");
                 return;
             }
@@ -379,7 +379,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
         return null;
     }
 
-    private void logout() {
+    private void logout(boolean setOffline) {
 
         String url = JABLOTRON_URL + "logout";
         try {
@@ -396,13 +396,18 @@ public class JablotronOasisHandler extends BaseThingHandler {
             logger.debug("logout... {}", line);
         } catch (Exception e) {
             //Silence
-            //logger.error(e.toString());
         } finally {
             controlDisabled = true;
             inService = false;
             session = "";
-            updateStatus(ThingStatus.OFFLINE);
+            if (setOffline) {
+                updateStatus(ThingStatus.OFFLINE);
+            }
         }
+    }
+
+    private void logout() {
+        logout(true);
     }
 
     private void setConnectionDefaults(HttpsURLConnection connection) {
@@ -490,7 +495,7 @@ public class JablotronOasisHandler extends BaseThingHandler {
             setConnectionDefaults(connection);
 
             if (connection.getResponseCode() == 200) {
-                if(verbose) {
+                if (verbose) {
                     logger.info("Jablotron OASIS service: {} successfully initialized", serviceId);
                 } else {
                     logger.debug("Jablotron OASIS service: {} successfully initialized", serviceId);
