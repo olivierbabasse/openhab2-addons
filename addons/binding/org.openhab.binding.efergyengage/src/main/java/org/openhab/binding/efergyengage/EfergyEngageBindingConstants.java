@@ -39,6 +39,5 @@ public class EfergyEngageBindingConstants {
     public final static String WEEK = "week";
     public final static String MONTH = "month";
     public final static String YEAR = "year";
-
-
+    public final static int CACHE_EXPIRY = 5000;
 }

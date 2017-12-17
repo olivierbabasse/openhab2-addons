@@ -9,6 +9,8 @@
 package org.openhab.binding.efergyengage.handler;
 
 import com.google.gson.Gson;
+import org.eclipse.smarthome.core.cache.ExpiringCache;
+import org.eclipse.smarthome.core.cache.ExpiringCacheMap;
 import org.eclipse.smarthome.core.library.types.DateTimeType;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.StringType;
@@ -55,6 +57,10 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
     private Gson gson = new Gson();
 
+    //caches
+    private ExpiringCacheMap<String, EfergyEngageMeasurement> cache;
+    private ExpiringCacheMap<String, EfergyEngageEstimate> cacheEstimate;
+
     /**
      * Our configuration
      */
@@ -80,6 +86,8 @@ public class EfergyEngageHandler extends BaseThingHandler {
         thingConfig.setThingUid(thingUid);
         int refresh = thingConfig.getRefresh();
         utcOffset = thingConfig.getUtcOffset();
+        cache = new ExpiringCacheMap<>(CACHE_EXPIRY);
+        cacheEstimate = new ExpiringCacheMap<>(CACHE_EXPIRY);
 
         login();
         initPolling(refresh);
@@ -98,7 +106,6 @@ public class EfergyEngageHandler extends BaseThingHandler {
             String password = thingConfig.getPassword();
             String device = thingConfig.getDevice();
 
-
             url = EFERGY_URL + "/mobile/get_token?device=" + device + "&username=" + email
                     + "&password=" + password;
 
@@ -108,13 +115,14 @@ public class EfergyEngageHandler extends BaseThingHandler {
             String line = readResponse(connection);
 
             EfergyEngageGetTokenResponse response = gson.fromJson(line, EfergyEngageGetTokenResponse.class);
+            logger.info("Efergy login response: {}", line);
 
             if (response.getStatus().equals("ok")) {
                 token = response.getToken();
                 logger.debug("Efergy token: {}", token);
                 updateStatus(ThingStatus.ONLINE);
             } else {
-                logger.debug("Efergy login response: {}", line);
+                logger.error("Efergy login response: {}", line);
                 throw new EfergyEngageException(response.getDesc());
             }
 
@@ -185,12 +193,12 @@ public class EfergyEngageHandler extends BaseThingHandler {
      * The polling future executes this every iteration
      */
     private void execute() {
-
         if (!this.getThing().getStatus().equals(ThingStatus.ONLINE)) {
             login();
         }
 
         if (!this.getThing().getStatus().equals(ThingStatus.ONLINE)) {
+            logger.warn("The thing is still not online!");
             return;
         }
 
@@ -210,28 +218,30 @@ public class EfergyEngageHandler extends BaseThingHandler {
         State state;
         switch (uid.getId()) {
             case CHANNEL_INSTANT:
-                value = readInstant();
+                value = readInstantCached();
                 state = new DecimalType(value.getValue());
                 updateState(uid, state);
                 break;
             case CHANNEL_ESTIMATE:
-                est = readForecast();
+                est = readForecastCached();
                 if (est == null) {
+                    logger.warn("A null forecast received!");
                     return;
                 }
                 state = new DecimalType(est.getEstimate());
                 updateState(uid, state);
                 break;
             case CHANNEL_COST:
-                est = readForecast();
+                est = readForecastCached();
                 if (est == null) {
+                    logger.warn("A null forecast received!");
                     return;
                 }
                 state = new DecimalType(est.getPreviousSum());
                 updateState(uid, state);
                 break;
             case CHANNEL_LAST_MEASUREMENT:
-                value = readInstant();
+                value = readInstantCached();
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(new java.util.Date(value.getMilis()));
                 updateState(uid, new DateTimeType(cal));
@@ -257,6 +267,20 @@ public class EfergyEngageHandler extends BaseThingHandler {
                 updateState(uid, state);
                 break;
         }
+    }
+
+    private EfergyEngageEstimate readForecastCached() {
+        if(cacheEstimate.get(CHANNEL_ESTIMATE) == null) {
+            cacheEstimate.put(CHANNEL_ESTIMATE, () -> readForecast());
+        }
+        return cacheEstimate.get(CHANNEL_ESTIMATE);
+    }
+
+    private EfergyEngageMeasurement readInstantCached() {
+        if(cache.get(CHANNEL_INSTANT) == null) {
+            cache.put(CHANNEL_INSTANT, () -> readInstant());
+        }
+        return cache.get(CHANNEL_INSTANT);
     }
 
     private EfergyEngageMeasurement readEnergy(String period) {
