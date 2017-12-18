@@ -17,6 +17,7 @@ package org.openhab.binding.efergyengage.internal.model;
 public class EfergyEngageGetInstantResponse {
     int reading;
     long last_reading_time;
+    EfergyEngageError error;
 
     public int getReading() {
         return reading;
@@ -24,5 +25,9 @@ public class EfergyEngageGetInstantResponse {
 
     public long getLastReadingTime() {
         return last_reading_time;
+    }
+
+    public EfergyEngageError getError() {
+        return error;
     }
 }

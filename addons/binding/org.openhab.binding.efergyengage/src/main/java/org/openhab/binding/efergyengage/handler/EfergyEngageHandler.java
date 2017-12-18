@@ -151,8 +151,14 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
             //read value
             EfergyEngageGetInstantResponse response = gson.fromJson(line, EfergyEngageGetInstantResponse.class);
-            measurement.setValue(response.getReading());
-            measurement.setMilis(response.getLastReadingTime());
+            logger.info("instant: {}", line);
+            if (response.getError() == null) {
+                measurement.setValue(response.getReading());
+                measurement.setMilis(response.getLastReadingTime());
+            } else {
+                logger.error("{} - {}", response.getError().getDesc(), response.getError().getMore());
+            }
+
         } catch (MalformedURLException e) {
             logger.error("The URL '{}' is malformed", url, e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
@@ -296,11 +302,15 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
             //read value
             EfergyEngageGetEnergyResponse response = gson.fromJson(line, EfergyEngageGetEnergyResponse.class);
-
-            Float energy = response.getSum();
-            String units = response.getUnits();
-
-            logger.debug("Efergy reading for {} period: {} {}", period, energy, units);
+            Float energy = Float.valueOf(-1);
+            String units = "";
+            if (response.getError() == null) {
+                energy = response.getSum();
+                units = response.getUnits();
+                logger.debug("Efergy reading for {} period: {} {}", period, energy, units);
+            } else {
+                logger.error("{} - {}", response.getError().getDesc(), response.getError().getMore());
+            }
             measurement.setValue(energy);
             measurement.setUnit(units);
         } catch (MalformedURLException e) {
@@ -325,8 +335,13 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
             //read value
             EfergyEngageGetForecastResponse response = gson.fromJson(line, EfergyEngageGetForecastResponse.class);
+            if (response.getError() == null) {
+                return response.getMonth_tariff();
+            } else {
+                logger.error("{} - {}", response.getError().getDesc(), response.getError().getMore());
+                return null;
+            }
 
-            return response.getMonth_tariff();
         } catch (MalformedURLException e) {
             logger.error("The URL '{}' is malformed", url, e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);

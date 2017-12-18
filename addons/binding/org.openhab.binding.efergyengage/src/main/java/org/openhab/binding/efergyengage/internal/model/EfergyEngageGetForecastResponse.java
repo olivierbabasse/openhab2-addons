@@ -17,8 +17,13 @@ package org.openhab.binding.efergyengage.internal.model;
 public class EfergyEngageGetForecastResponse {
 
     EfergyEngageEstimate month_tariff;
+    EfergyEngageError error;
 
     public EfergyEngageEstimate getMonth_tariff() {
         return month_tariff;
+    }
+
+    public EfergyEngageError getError() {
+        return error;
     }
 }

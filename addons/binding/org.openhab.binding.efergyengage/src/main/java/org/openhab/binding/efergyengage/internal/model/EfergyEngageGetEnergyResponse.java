@@ -17,6 +17,7 @@ package org.openhab.binding.efergyengage.internal.model;
 public class EfergyEngageGetEnergyResponse {
     Float sum;
     String units;
+    EfergyEngageError error;
 
     public Float getSum() {
         return sum;
@@ -24,5 +25,9 @@ public class EfergyEngageGetEnergyResponse {
 
     public String getUnits() {
         return units;
+    }
+
+    public EfergyEngageError getError() {
+        return error;
     }
 }
