@@ -9,7 +9,6 @@
 package org.openhab.binding.efergyengage.handler;
 
 import com.google.gson.Gson;
-import org.eclipse.smarthome.core.cache.ExpiringCache;
 import org.eclipse.smarthome.core.cache.ExpiringCacheMap;
 import org.eclipse.smarthome.core.library.types.DateTimeType;
 import org.eclipse.smarthome.core.library.types.DecimalType;
@@ -248,9 +247,11 @@ public class EfergyEngageHandler extends BaseThingHandler {
                 break;
             case CHANNEL_LAST_MEASUREMENT:
                 value = readInstantCached();
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(new java.util.Date(value.getMilis()));
-                updateState(uid, new DateTimeType(cal));
+                if (value.getMilis() > 0) {
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(new java.util.Date(value.getMilis()));
+                    updateState(uid, new DateTimeType(cal));
+                }
                 break;
             case CHANNEL_DAYTOTAL:
                 value = readEnergy(DAY);
@@ -276,14 +277,14 @@ public class EfergyEngageHandler extends BaseThingHandler {
     }
 
     private EfergyEngageEstimate readForecastCached() {
-        if(cacheEstimate.get(CHANNEL_ESTIMATE) == null) {
+        if (cacheEstimate.get(CHANNEL_ESTIMATE) == null) {
             cacheEstimate.put(CHANNEL_ESTIMATE, () -> readForecast());
         }
         return cacheEstimate.get(CHANNEL_ESTIMATE);
     }
 
     private EfergyEngageMeasurement readInstantCached() {
-        if(cache.get(CHANNEL_INSTANT) == null) {
+        if (cache.get(CHANNEL_INSTANT) == null) {
             cache.put(CHANNEL_INSTANT, () -> readInstant());
         }
         return cache.get(CHANNEL_INSTANT);
