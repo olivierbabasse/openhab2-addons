@@ -110,6 +110,8 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
             URL tokenUrl = new URL(url);
             URLConnection connection = tokenUrl.openConnection();
+            connection.setReadTimeout(READ_TIMEOUT);
+            connection.setConnectTimeout(CONNECT_TIMEOUT);
 
             String line = readResponse(connection);
 
@@ -145,6 +147,8 @@ public class EfergyEngageHandler extends BaseThingHandler {
             url = EFERGY_URL + "/mobile_proxy/getInstant?token=" + token;
             URL valueUrl = new URL(url);
             URLConnection connection = valueUrl.openConnection();
+            connection.setReadTimeout(READ_TIMEOUT);
+            connection.setConnectTimeout(CONNECT_TIMEOUT);
 
             String line = readResponse(connection);
 
@@ -298,6 +302,8 @@ public class EfergyEngageHandler extends BaseThingHandler {
             url = EFERGY_URL + "/mobile_proxy/getEnergy?token=" + token + "&period=" + period + "&offset=" + utcOffset;
             URL valueUrl = new URL(url);
             URLConnection connection = valueUrl.openConnection();
+            connection.setReadTimeout(READ_TIMEOUT);
+            connection.setConnectTimeout(CONNECT_TIMEOUT);
 
             String line = readResponse(connection);
 
@@ -331,6 +337,8 @@ public class EfergyEngageHandler extends BaseThingHandler {
             url = EFERGY_URL + "/mobile_proxy/getForecast?token=" + token + "&dataType=cost&period=month&offset=" + utcOffset;
             URL valueUrl = new URL(url);
             URLConnection connection = valueUrl.openConnection();
+            connection.setReadTimeout(READ_TIMEOUT);
+            connection.setConnectTimeout(CONNECT_TIMEOUT);
 
             String line = readResponse(connection);
 

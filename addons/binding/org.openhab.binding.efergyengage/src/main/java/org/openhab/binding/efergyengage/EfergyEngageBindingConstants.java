@@ -40,4 +40,6 @@ public class EfergyEngageBindingConstants {
     public final static String MONTH = "month";
     public final static String YEAR = "year";
     public final static int CACHE_EXPIRY = 5000;
+    public final static int CONNECT_TIMEOUT = 3000;
+    public final static int READ_TIMEOUT = 10000;
 }
