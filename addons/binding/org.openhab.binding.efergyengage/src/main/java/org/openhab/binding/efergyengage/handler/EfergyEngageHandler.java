@@ -116,7 +116,7 @@ public class EfergyEngageHandler extends BaseThingHandler {
             String line = readResponse(connection);
 
             EfergyEngageGetTokenResponse response = gson.fromJson(line, EfergyEngageGetTokenResponse.class);
-            logger.info("Efergy login response: {}", line);
+            logger.debug("Efergy login response: {}", line);
 
             if (response.getStatus().equals("ok")) {
                 token = response.getToken();
@@ -154,7 +154,6 @@ public class EfergyEngageHandler extends BaseThingHandler {
 
             //read value
             EfergyEngageGetInstantResponse response = gson.fromJson(line, EfergyEngageGetInstantResponse.class);
-            logger.info("instant: {}", line);
             if (response.getError() == null) {
                 measurement.setValue(response.getReading());
                 measurement.setMilis(response.getLastReadingTime());
