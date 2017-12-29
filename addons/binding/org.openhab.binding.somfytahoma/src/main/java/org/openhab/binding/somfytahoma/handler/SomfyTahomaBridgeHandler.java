@@ -8,26 +8,13 @@
  */
 package org.openhab.binding.somfytahoma.handler;
 
-import com.google.gson.Gson;
-import org.apache.commons.lang.StringUtils;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.smarthome.config.core.status.ConfigStatusMessage;
-import org.eclipse.smarthome.core.library.types.*;
-import org.eclipse.smarthome.core.thing.*;
-import org.eclipse.smarthome.core.thing.binding.ConfigStatusBridgeHandler;
-import org.eclipse.smarthome.core.thing.type.ChannelTypeUID;
-import org.eclipse.smarthome.core.types.Command;
-import org.eclipse.smarthome.core.types.State;
-import org.eclipse.smarthome.core.types.UnDefType;
-import org.openhab.binding.somfytahoma.config.SomfyTahomaConfig;
-import org.openhab.binding.somfytahoma.internal.SomfyTahomaException;
-import org.openhab.binding.somfytahoma.internal.discovery.SomfyTahomaItemDiscoveryService;
-import org.openhab.binding.somfytahoma.model.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.openhab.binding.somfytahoma.SomfyTahomaBindingConstants.*;
 
-import javax.net.ssl.HttpsURLConnection;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +25,51 @@ import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static org.openhab.binding.somfytahoma.SomfyTahomaBindingConstants.*;
+import javax.net.ssl.HttpsURLConnection;
+
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.smarthome.config.core.status.ConfigStatusMessage;
+import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.OpenClosedType;
+import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.smarthome.core.library.types.StringType;
+import org.eclipse.smarthome.core.thing.Bridge;
+import org.eclipse.smarthome.core.thing.Channel;
+import org.eclipse.smarthome.core.thing.ChannelUID;
+import org.eclipse.smarthome.core.thing.Thing;
+import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
+import org.eclipse.smarthome.core.thing.binding.ConfigStatusBridgeHandler;
+import org.eclipse.smarthome.core.thing.type.ChannelTypeUID;
+import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.State;
+import org.eclipse.smarthome.core.types.UnDefType;
+import org.openhab.binding.somfytahoma.config.SomfyTahomaConfig;
+import org.openhab.binding.somfytahoma.internal.SomfyTahomaException;
+import org.openhab.binding.somfytahoma.internal.discovery.SomfyTahomaItemDiscoveryService;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaAction;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaActionGroup;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaActionGroupResponse;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaApplyResponse;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaDevice;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaDeviceWithState;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaExecution;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaExecutionsResponse;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaGateway;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaLoginResponse;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaSetup;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaSetupResponse;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaState;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaStatesResponse;
+import org.openhab.binding.somfytahoma.model.SomfyTahomaVersionResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 /**
  * The {@link SomfyTahomaBridgeHandler} is responsible for handling commands, which are
@@ -62,7 +93,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
      */
     protected SomfyTahomaConfig thingConfig;
 
-    //Gson & parser
+    // Gson & parser
     private final Gson gson = new Gson();
 
     private SomfyTahomaItemDiscoveryService discoveryService = null;
@@ -128,7 +159,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
                 wr.write(postData);
             }
 
-            //get cookie
+            // get cookie
             String headerName;
             for (int i = 1; (headerName = connection.getHeaderFieldKey(i)) != null; i++) {
                 if (headerName.equals("Set-Cookie")) {
@@ -154,7 +185,8 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             }
         } catch (MalformedURLException e) {
             logger.error("The URL '{}' is malformed!", url, e);
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "The URL '" + url + "' is malformed: ");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    "The URL '" + url + "' is malformed: ");
         } catch (Exception e) {
             logger.error("Cannot get login cookie!", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Cannot get login cookie");
@@ -194,7 +226,6 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         }
     }
 
-
     private void listActionGroups() {
         String groups = getGroups();
         if (StringUtils.equals(groups, UNAUTHORIZED)) {
@@ -210,7 +241,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         for (SomfyTahomaActionGroup group : data.getActionGroups()) {
             String oid = group.getOid();
             String label = group.getLabel();
-            //actiongroups use oid as deviceURL
+            // actiongroups use oid as deviceURL
             String deviceURL = oid;
             discoveryService.actionGroupDiscovered(label, deviceURL, oid);
         }
@@ -295,7 +326,8 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         logger.debug("Getting states for a device: {}", deviceUrl);
         try {
             url = TAHOMA_URL + "getStates";
-            String urlParameters = "[{\"deviceURL\": \"" + deviceUrl + "\", \"states\": [" + getFormattedParameters(handler.getStateNames().values()) + "]}]";
+            String urlParameters = "[{\"deviceURL\": \"" + deviceUrl + "\", \"states\": ["
+                    + getFormattedParameters(handler.getStateNames().values()) + "]}]";
 
             InputStream response = sendDataToTahomaWithCookie(url, urlParameters);
             String line = readResponse(response);
@@ -344,7 +376,8 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         logger.debug("Getting state for a device: {} and state name: {}", deviceUrl, stateName);
         try {
             url = TAHOMA_URL + "getStates";
-            String urlParameters = "[{\"deviceURL\": \"" + deviceUrl + "\", \"states\": [{\"name\": \"" + stateName + "\"}]}]";
+            String urlParameters = "[{\"deviceURL\": \"" + deviceUrl + "\", \"states\": [{\"name\": \"" + stateName
+                    + "\"}]}]";
 
             InputStream response = sendDataToTahomaWithCookie(url, urlParameters);
             String line = readResponse(response);
@@ -384,10 +417,14 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             case TYPE_STRING:
                 String value = state.getValue().toString().toLowerCase();
                 String name = state.getName();
-                if (name.equals("internal:IntrusionDetectedState") || name.equals("internal:CurrentAlarmModeState") || name.equals("internal:TargetAlarmModeState")) {
+                if (name.equals("internal:IntrusionDetectedState") || name.equals("internal:CurrentAlarmModeState")
+                        || name.equals("internal:TargetAlarmModeState") || name.equals("core:ActiveZonesState")
+                        || name.equals("core:ConnectivityState") || name.equals("core:CyclicButtonState")
+                        || name.equals("internal:BatteryStatusState")) {
                     return new StringType(value);
-                } else
+                } else {
                     return parseStringState(value);
+                }
             default:
                 return null;
         }
@@ -434,9 +471,13 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
     public void updateThingState(Thing thing, String url) {
         SomfyTahomaBaseThingHandler handler = (SomfyTahomaBaseThingHandler) thing.getHandler();
         if (handler != null && handler.getStateNames() != null) {
+            if (handler.needRefreshCommand()) {
+                sendCommand(url, "refreshState", "[]");
+            }
+
             List<SomfyTahomaState> states = getAllStates(handler, url);
             if (states == null) {
-                //relogin
+                // relogin
                 login();
                 states = getAllStates(handler, url);
             }
@@ -475,7 +516,8 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         }
     }
 
-    private State getChannelState(SomfyTahomaThingHandler handler, Channel channel, List<SomfyTahomaState> channelStates) {
+    private State getChannelState(SomfyTahomaThingHandler handler, Channel channel,
+            List<SomfyTahomaState> channelStates) {
         ChannelTypeUID channelUID = channel.getChannelTypeUID();
         if (channelUID == null) {
             return null;
@@ -499,7 +541,7 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             }
 
             if (state.equals(UnDefType.NULL)) {
-                //relogin
+                // relogin
                 login();
                 state = getState(handler, url, stateName);
             }
@@ -592,7 +634,8 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
         try {
             url = TAHOMA_URL + "apply";
 
-            String urlParameters = "{\"actions\": [{\"deviceURL\": \"" + io + "\", \"commands\": [{ \"name\": \"" + command + "\", \"parameters\": " + params + "}]}]}";
+            String urlParameters = "{\"actions\": [{\"deviceURL\": \"" + io + "\", \"commands\": [{ \"name\": \""
+                    + command + "\", \"parameters\": " + params + "}]}]}";
             logger.debug("Sending apply: {}", urlParameters);
 
             InputStream response = sendDataToTahomaWithCookie(url, urlParameters);
@@ -732,10 +775,15 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             return;
         }
 
+        String status = getTahomaStatus(id);
+
         for (Channel channel : thing.getChannels()) {
             if (channel.getUID().getId().equals(VERSION)) {
                 logger.debug("Updating version channel");
                 updateState(channel.getUID(), new StringType(version));
+            } else if (channel.getUID().getId().equals(STATUS)) {
+                logger.debug("Updating status channel");
+                updateState(channel.getUID(), new StringType(status));
             }
         }
 
@@ -758,6 +806,30 @@ public class SomfyTahomaBridgeHandler extends ConfigStatusBridgeHandler {
             logger.error("Cannot get Tahoma gateway version!", e);
         } catch (Exception e) {
             logger.error("Cannot get Tahoma gateway version!", e);
+        }
+        return null;
+    }
+
+    public String getTahomaStatus(String gatewayId) {
+        try {
+            String url = SETUP_URL + gatewayId;
+            logger.debug(url);
+            InputStream response = sendToTahomaWithCookie(url);
+            String line = readResponse(response);
+            // SomfyTahomaStatusResponse data = gson.fromJson(line, SomfyTahomaStatusResponse.class);
+            JsonObject job = gson.fromJson(line, JsonObject.class);
+            JsonPrimitive data = job.getAsJsonObject("connectivity").getAsJsonPrimitive("status");
+            logger.debug("Tahoma status: {}", data.toString());
+
+            return data.toString();
+        } catch (IOException e) {
+            if (e.toString().contains(UNAUTHORIZED)) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Unauthorized");
+                return UNAUTHORIZED;
+            }
+            logger.error("Cannot get Tahoma gateway status!", e);
+        } catch (Exception e) {
+            logger.error("Cannot get Tahoma gateway status!", e);
         }
         return null;
     }
